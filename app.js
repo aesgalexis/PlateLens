@@ -141,6 +141,9 @@ function parseNameplate(text) {
     /(?:serial(?:\s*(?:no|number|nr))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s+(?:Hz|kW|KW|A|V(?:olt)?|year|baujahr|weight|gewicht)\b|\n|$)/im
   ]);
 
+  if (/^[\d\s]+$/.test(result.model)) result.model = result.model.replace(/\s+/g,"");
+  if (/^[\d\s]+$/.test(result.serialNumber)) result.serialNumber = result.serialNumber.replace(/\s+/g,"");
+
   result.frequency = first(normalized, [
     /\bHz\s*[:=~-]?\s*((?:50|60)(?:[.,]\d+)?)(?=\s|$)/i,
     /\b((?:50|60)(?:[.,]\d+)?)\s*Hz\b/i
