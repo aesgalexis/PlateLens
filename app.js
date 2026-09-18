@@ -116,12 +116,14 @@ async function prepareOcrImage(file) {
 }
 
 function rotateCanvas(source, degrees, maxSide = null) {
+  const sourceWidth = source.naturalWidth || source.width;
+  const sourceHeight = source.naturalHeight || source.height;
   const angle = ((degrees % 360) + 360) % 360;
   const radians = angle * Math.PI / 180;
   const cos = Math.abs(Math.cos(radians));
   const sin = Math.abs(Math.sin(radians));
-  const boundWidth = source.width * cos + source.height * sin;
-  const boundHeight = source.width * sin + source.height * cos;
+  const boundWidth = sourceWidth * cos + sourceHeight * sin;
+  const boundHeight = sourceWidth * sin + sourceHeight * cos;
   const scale = maxSide ? Math.min(1, maxSide / Math.max(boundWidth, boundHeight)) : 1;
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(boundWidth * scale));
@@ -131,12 +133,25 @@ function rotateCanvas(source, degrees, maxSide = null) {
   ctx.imageSmoothingQuality = "high";
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.rotate(radians);
-  const drawWidth = source.width * scale;
-  const drawHeight = source.height * scale;
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
   ctx.drawImage(source, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
   return canvas;
 }
 
+
+
+function applyOrientedPreview(degrees) {
+  if (!previewImage.naturalWidth || !previewImage.naturalHeight) return;
+  if (!degrees) {
+    previewImage.style.transform = "";
+    return;
+  }
+  const displayCanvas = rotateCanvas(previewImage, degrees, 1800);
+  previewImage.style.transform = "";
+  previewImage.style.transition = "";
+  previewImage.src = displayCanvas.toDataURL("image/jpeg", 0.9);
+}
 
 function makeBinaryVariant(source) {
   const canvas = document.createElement("canvas");
@@ -324,8 +339,7 @@ analyzeBtn.addEventListener("click", async () => {
       orientation.score = refined.score;
 
       const orientedImage = rotateCanvas(preparedImage, orientation.angle);
-      previewImage.style.transform = orientation.angle ? "rotate(" + orientation.angle + "deg)" : "";
-      previewImage.style.transition = "transform .2s ease";
+      applyOrientedPreview(orientation.angle);
 
       ocrPass = 1;
       await worker.setParameters({
