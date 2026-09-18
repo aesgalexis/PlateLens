@@ -183,6 +183,28 @@ async function applyOrientedPreview(file, degrees) {
   }
 }
 
+
+function cropCanvas(source, rectangle) {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(rectangle.width));
+  canvas.height = Math.max(1, Math.round(rectangle.height));
+  const ctx = canvas.getContext("2d", {willReadFrequently:false});
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(
+    source,
+    rectangle.left,
+    rectangle.top,
+    rectangle.width,
+    rectangle.height,
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+  return canvas;
+}
+
 function makeBinaryVariant(source) {
   const canvas = document.createElement("canvas");
   canvas.width = source.width;
@@ -291,20 +313,29 @@ function extractionCoverage(text) {
   const technicalCount = technicalKeys.filter(key => Boolean(parsed[key])).length;
   const identityCount = identityKeys.filter(key => Boolean(parsed[key])).length;
   const fieldCount = Object.values(parsed).filter(Boolean).length;
-  const unitSignals = (String(text || "").match(/\b(?:Hz|kW|kVA|Volt|V|A|amper|rpm|r\/min|min-?1|bar|mbar|psi|psig|kg|m3\/h|m³\/h|lts?\/hora)\b/gi) || []).length;
-  return {parsed, technicalCount, identityCount, fieldCount, unitSignals};
+  const source = String(text || "");
+  const unitSignals = (source.match(/\b(?:Hz|kW|kVA|Volt|V|A|amper|rpm|r\/min|min-?1|bar|mbar|psi|psig|kg|m3\/h|m³\/h|lts?\/hora)\b/gi) || []).length;
+  const lines = source.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const shortLines = lines.filter(line => line.length <= 2).length;
+  const garbageLines = lines.filter(line => {
+    const alnum = (line.match(/[A-Za-zÀ-ÿ0-9]/g) || []).length;
+    const symbols = (line.match(/[^A-Za-zÀ-ÿ0-9\s]/g) || []).length;
+    return alnum < 2 || symbols > alnum * 1.5;
+  }).length;
+  const fragmentation = lines.length ? (shortLines + garbageLines * 0.6) / lines.length : 1;
+  return {parsed, technicalCount, identityCount, fieldCount, unitSignals, fragmentation, lineCount:lines.length};
 }
 function needsSparseRetry(text) {
   const coverage = extractionCoverage(text);
-  return coverage.technicalCount < 4 || coverage.fieldCount < 6 || coverage.unitSignals < 4;
+  return coverage.fragmentation > 0.20 || coverage.technicalCount < 5 || coverage.fieldCount < 8 || coverage.unitSignals < 5;
 }
 function needsTechnicalRegionRetry(text) {
   const coverage = extractionCoverage(text);
-  return coverage.technicalCount < 4 || coverage.fieldCount < 6;
+  return coverage.fragmentation > 0.18 || coverage.technicalCount < 5 || coverage.fieldCount < 8;
 }
 function needsLayoutRetry(text) {
   const coverage = extractionCoverage(text);
-  return coverage.technicalCount < 4 && coverage.fieldCount < 8;
+  return coverage.fragmentation > 0.22 || (coverage.technicalCount < 5 && coverage.fieldCount < 10);
 }
 
 function mergeOcrTexts(...texts) {
@@ -371,6 +402,19 @@ analyzeBtn.addEventListener("click", async () => {
       const orientedImage = rotateCanvas(preparedImage, orientation.angle);
       await applyOrientedPreview(currentFile, orientation.angle);
 
+      const plateFrame = {
+        left: Math.round(orientedImage.width * 0.05),
+        top: Math.round(orientedImage.height * 0.05),
+        width: Math.round(orientedImage.width * 0.90),
+        height: Math.round(orientedImage.height * 0.90)
+      };
+      const plateBody = {
+        left: Math.round(orientedImage.width * 0.06),
+        top: Math.round(orientedImage.height * 0.04),
+        width: Math.round(orientedImage.width * 0.84),
+        height: Math.round(orientedImage.height * 0.78)
+      };
+
       ocrPass = 1;
       await worker.setParameters({
         tessedit_pageseg_mode: Tesseract.PSM.AUTO,
@@ -389,12 +433,6 @@ analyzeBtn.addEventListener("click", async () => {
           tessedit_pageseg_mode: Tesseract.PSM.SINGLE_COLUMN,
           preserve_interword_spaces: "1"
         });
-        const plateFrame = {
-          left: Math.round(orientedImage.width * 0.05),
-          top: Math.round(orientedImage.height * 0.05),
-          width: Math.round(orientedImage.width * 0.90),
-          height: Math.round(orientedImage.height * 0.90)
-        };
         const frameResult = await worker.recognize(orientedImage, {rectangle: plateFrame});
         text = mergeOcrTexts(text, frameResult.data.text);
       }
@@ -406,12 +444,6 @@ analyzeBtn.addEventListener("click", async () => {
           tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
           preserve_interword_spaces: "1"
         });
-        const plateBody = {
-          left: Math.round(orientedImage.width * 0.06),
-          top: Math.round(orientedImage.height * 0.04),
-          width: Math.round(orientedImage.width * 0.84),
-          height: Math.round(orientedImage.height * 0.78)
-        };
         const bodyResult = await worker.recognize(orientedImage, {rectangle: plateBody});
         text = mergeOcrTexts(text, bodyResult.data.text);
       }
@@ -434,7 +466,8 @@ analyzeBtn.addEventListener("click", async () => {
           tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
           preserve_interword_spaces: "1"
         });
-        const binaryImage = makeBinaryVariant(orientedImage);
+        const bodyImage = cropCanvas(orientedImage, plateBody);
+        const binaryImage = makeBinaryVariant(bodyImage);
         const binaryResult = await worker.recognize(binaryImage);
         text = mergeOcrTexts(text, binaryResult.data.text);
       }
