@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="PlateLens turns equipment nameplates into structured, editable data directly in your browser.">
+  <meta name="theme-color" content="#101214">
+  <title>PlateLens — Nameplate to structured data</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="PlateLens home">
+      <span class="brand-mark" aria-hidden="true">PL</span>
+      <span>PlateLens</span>
+    </a>
+    <div class="header-actions">
+      <span class="privacy-pill">Local OCR · no upload</span>
+      <a class="github-link" href="https://github.com/aesgalexis/PlateLens">GitHub</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">FIELD TOOL · V0.1</p>
+        <h1>Turn a machine nameplate into usable data.</h1>
+        <p class="lede">Drop a photo. PlateLens reads the visible text in your browser, extracts common technical fields and gives you an editable record you can verify and reuse.</p>
+        <div class="hero-notes">
+          <span>No account</span>
+          <span>No backend</span>
+          <span>Verify before use</span>
+        </div>
+      </div>
+      <div class="sample-card" aria-label="Example output">
+        <div class="sample-card__top">
+          <span>EXAMPLE RECORD</span>
+          <span class="status-dot">review</span>
+        </div>
+        <dl>
+          <div><dt>Manufacturer</dt><dd>ABB</dd></div>
+          <div><dt>Model</dt><dd>M3BP 160 MLA 4</dd></div>
+          <div><dt>Power</dt><dd>15 kW</dd></div>
+          <div><dt>Voltage</dt><dd>400 / 690 V</dd></div>
+          <div><dt>Speed</dt><dd>1475 rpm</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="workspace" aria-labelledby="workspace-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">01 · CAPTURE</p>
+          <h2 id="workspace-title">Read a nameplate</h2>
+        </div>
+        <button id="resetBtn" class="text-button" type="button" hidden>Reset</button>
+      </div>
+
+      <div class="workspace-grid">
+        <div class="capture-panel">
+          <label id="dropZone" class="drop-zone" for="imageInput">
+            <input id="imageInput" type="file" accept="image/*" capture="environment">
+            <span class="drop-zone__icon" aria-hidden="true">＋</span>
+            <strong>Drop a nameplate photo here</strong>
+            <span>or choose an image · you can also paste from clipboard</span>
+            <small>JPG, PNG, WEBP · processed on this device</small>
+          </label>
+
+          <figure id="previewWrap" class="preview" hidden>
+            <img id="previewImage" alt="Selected equipment nameplate">
+            <figcaption>
+              <span id="fileName"></span>
+              <button id="replaceBtn" class="text-button" type="button">Replace</button>
+            </figcaption>
+          </figure>
+
+          <div class="capture-actions">
+            <button id="analyzeBtn" class="primary-button" type="button" disabled>Analyze plate</button>
+            <span id="progressText" class="progress-text" role="status" aria-live="polite">Choose an image to begin.</span>
+          </div>
+          <div class="progress-track" aria-hidden="true"><span id="progressBar"></span></div>
+        </div>
+
+        <aside class="how-panel">
+          <p class="eyebrow">GOOD INPUT</p>
+          <h3>Give the text a fighting chance.</h3>
+          <ul>
+            <li>Fill the frame with the plate.</li>
+            <li>Avoid reflections across stamped text.</li>
+            <li>Keep the camera as square to the plate as possible.</li>
+            <li>Use enough light, but not direct flash.</li>
+          </ul>
+          <p class="how-panel__note">PlateLens is a transcription aid, not a source of truth. Critical values should always be checked against the original plate.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="resultsSection" class="results" hidden aria-labelledby="results-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">02 · VERIFY</p>
+          <h2 id="results-title">Structured record</h2>
+        </div>
+        <span id="fieldCount" class="count-pill"></span>
+      </div>
+
+      <div class="results-grid">
+        <form id="recordForm" class="record-card">
+          <div class="form-grid" id="formGrid"></div>
+          <label class="field field--wide">
+            <span>Notes</span>
+            <textarea name="notes" rows="3" placeholder="Add anything useful that is not represented above."></textarea>
+          </label>
+        </form>
+
+        <div class="review-column">
+          <section class="review-card">
+            <div class="card-heading">
+              <div>
+                <p class="eyebrow">RAW OCR</p>
+                <h3>What PlateLens read</h3>
+              </div>
+              <button id="copyRawBtn" class="text-button" type="button">Copy</button>
+            </div>
+            <pre id="rawText"></pre>
+          </section>
+
+          <section class="review-card">
+            <p class="eyebrow">EXPORT</p>
+            <h3>Use the verified data</h3>
+            <div class="export-actions">
+              <button id="copyTextBtn" class="secondary-button" type="button">Copy text</button>
+              <button id="copyJsonBtn" class="secondary-button" type="button">Copy JSON</button>
+              <button id="downloadJsonBtn" class="secondary-button" type="button">Download JSON</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="principles">
+      <p class="eyebrow">DESIGN PRINCIPLES</p>
+      <div class="principles-grid">
+        <article><span>01</span><h3>Local first</h3><p>The V1 performs OCR in your browser. PlateLens does not need an account or server to read the photo.</p></article>
+        <article><span>02</span><h3>Structured, not magical</h3><p>Extraction is conservative. Unknown values stay unknown instead of being silently invented.</p></article>
+        <article><span>03</span><h3>Human verified</h3><p>The result is an editable record because a technician should remain in control of machine data.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>PlateLens · open source field tool</span>
+    <span>MIT · <a href="https://github.com/aesgalexis/PlateLens">aesgalexis/PlateLens</a></span>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
