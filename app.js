@@ -274,27 +274,34 @@ function parseNameplate(text) {
   // Prefer values explicitly attached to labels. Industrial plates often place
   // another label/value pair on the same OCR line, so each capture is bounded.
   result.model = first(normalized, [
-    /(?:^|\n)\s*(?:modello\s*\/\s*model|model|type|typ|mod\.?|modelo|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N|Part\s*(?:No|Number)|Product\s*(?:No|Number))\b))/im
+    /(?:^|\n)\s*(?:modello\s*\/\s*model|model|type|typ|mod\.?|modelo|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:REV|INPUT|OUTPUT|Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N|Part\s*(?:No|Number)|Product\s*(?:No|Number))\b))/im
   ]);
   result.serialNumber = first(normalized, [
     /(?:matricola\s*\/\s*serial\s*number|serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.=\-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|kW|KW|A|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
   ]);
   result.partNumber = first(normalized, [
-    /(?:part\s*(?:no|number)|p\/n|product\s*(?:no|number)|code|cat\.?\s*no)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
+    /(?:part\s*(?:no|number)|p(?:\/|-|\.)?\s*no\.?|product\s*(?:no|number)|code|cat\.?\s*no)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
   ]);
 
   if (/^[\d\s]+$/.test(result.model)) result.model = result.model.replace(/\s+/g,"");
   if (/^[LI]\d{7,}$/i.test(result.model)) result.model = "1" + result.model.slice(1);
   if (/^[\d\s]+$/.test(result.serialNumber)) result.serialNumber = result.serialNumber.replace(/\s+/g,"");
+  if (!result.model) result.model = first(normalized, [/\bMODEL\s*:\s*([A-Z0-9][A-Z0-9.+_\/-]+)\b/i]);
   if (!result.model) {
     result.model = first(normalized, [
-      /3\s*[~\-]\s*(?:motor|mot)\s+([A-Z0-9][A-Z0-9.+_\/-]{3,30})/i,
-      /3\s*~\s+([A-Z][A-Z0-9.+_\/-]{3,30})/i
+      /3\s*[~\-]\s*(?:motor|mot)\s+([A-Z0-9][A-Z0-9.+_\/-]{3,30}(?:\s+[A-Z0-9.+_\/-]{1,12}){0,3})/i,
+      /3\s*~\s+([A-Z][A-Z0-9.+_\/-]{3,30}(?:\s+[A-Z0-9.+_\/-]{1,12}){0,3})/i,
+      /(?:^|\n)\s*(LXM62[A-Z0-9]+)\s*(?:\n|$)/i,
+      /(?:^|\n)\s*((?:Movitec|Omega|VMS)\s+[A-Z0-9][A-Z0-9 .+_\/-]{2,40})\s*(?:\n|$)/i,
+      /(?:^|\n)\s*(LSHRM\s+\d+[A-Z0-9 ]{0,20})\s*(?:\n|$)/i
     ]);
   }
 
   result.date = first(normalized, [
-    /\bDate(?:\s*\(YYMM\))?\s*[:#.-]?\s*[\[|:_-]*\s*((?:(?:0?[1-9]|1[0-2])\s*[\/.-]\s*\d{2,4}|\d{4}))/i
+    /\bDate(?:\s*\(YYMM\))?\s*[:#.-]?\s*[\[|:_-]*\s*((?:(?:0?[1-9]|1[0-2])\s*[\/.-]\s*\d{2,4}|\d{4}|(?:19|20)\d{2}[.-]\d{1,2}[.-]\d{1,2}))/i,
+    /(?:^|\n)\s*((?:19|20)\d{2}[.-]\d{1,2}[.-]\d{1,2})\s*(?:\n|$)/i,
+    /(?:^|\n)\s*(\d{1,2}\.\d{1,2}\.(?:19|20)\d{2})\s*(?:\n|$)/i,
+    /\bProd\.?\s*((?:\d{1,2})\s*\/\s*(?:19|20)\d{2})\b/i
   ]);
 
   result.phases = first(normalized, [
@@ -327,6 +334,12 @@ function parseNameplate(text) {
     /(?:baujahr\s*\/\s*year|baujahr|year)\s*[:#.-]?\s*(?:19|20)?\d{2}\s+A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i
   ]);
   if (result.current && !/A$/i.test(result.current)) result.current += " A";
+  const modelLineCurrentFalsePositive = result.current && lines.some(line => {
+    const ampValue = result.current.replace(/\s*A$/i, "");
+    return new RegExp("(?:^|\\s)" + ampValue.replace(/[.*+?^${}()|[\\]\\]/g, "\\  if (result.current && !/A$/i.test(result.current)) result.current += " A";") + "\\s*A\\b", "i").test(line) &&
+      /^(?:Omega|Type|Typ|Model)\b/i.test(line) && !/\b(?:V|Hz|kW|W|current|amp|FLA|INPUT|OUTPUT)\b/i.test(line);
+  });
+  if (modelLineCurrentFalsePositive) result.current = "";
   const yearAsCurrent = result.current && result.year && result.current.replace(/\s*A$/i, "") === result.year;
   if (yearAsCurrent) {
     const labelledCurrent = normalized.match(/\bA\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\b/i);
@@ -338,6 +351,7 @@ function parseNameplate(text) {
   }
 
   result.voltage = first(normalized, [
+    /(?:Input\s+(?:a\.c\.\/d\.c\.|ac\/dc|ac|a\.c\.)|INPUT\s*:)[^\n]{0,24}?((?:\d{2,4}(?:\s*[-\/]\s*\d{2,4})?))\s*V(?:ac|dc)?\b/i,
     /\bVolt\s*[~=:.-]*\s*[\[|:_-]*\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)(?=\s|\]|$)/i,
     /\bIN\s*:\s*(3x\d{2,4}\s*[-/]\s*\d{2,4})\s*V/i,
     /(?:voltage|volt|tension|spannung)\s*[:=~-]?\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V?\b/i,
@@ -404,11 +418,13 @@ function parseNameplate(text) {
   }
 
   result.head = first(normalized, [
-    /\bH\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*m?\b/i
+    /(?:^|\n)\s*H\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*m\b/i,
+    /\bQ\s*[:=.-]?\s*\d+(?:[.,]\d+)?\s*(?:m[³3]\/h|l\/s|l\/min)[^\n]{0,40}?\bH\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*m\b/i
   ]);
   if (result.head && !/m$/i.test(result.head)) result.head += " m";
 
   result.workingPressure = first(normalized, [
+    /\bPS(?:\/PSs)?(?:\s+(?:LP|HP))?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*bar(?:\(g\))?\b/i,
     /(?:max\.?\s*working\s*pressure|working\s*pressure|max\.?\s*pressure)\s*(?:bar(?:\(e\))?|psig)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\bpsig\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\bp\/t\s+(\d+(?:[.,]\d+)?)\s*\/\s*\d+(?:[.,]\d+)?\s*bar/i
@@ -418,7 +434,9 @@ function parseNameplate(text) {
     if (!/(?:bar|psig)$/i.test(result.workingPressure)) result.workingPressure += " " + pressureUnit;
   }
   result.speed = first(normalized, [
+    /\b(\d{2,5}\s*[-–]\s*\d{2,5})[ \t]*(?:r\/?min|rpm|min-1|min⁻¹|\/min)\b/i,
     /\b(\d{2,5})[ \t]*(?:r\/?min|rpm|min-1|min⁻¹|\/min)\b/i,
+    /(?:^|\n)\s*n(?:\s+fix\.?)?\s*[:=~-]?\s*(\d{2,5})\s*(?:1\/min|r\/?min|rpm|min-1|min⁻¹)\b/i,
     /(?:^|\n)\s*(?:RPM|r\/min|min-1|min⁻¹)\s*[:=~-]?\s*(\d{2,5})\b/i
   ]);
   if (result.speed && !/rpm$/i.test(result.speed)) result.speed += " rpm";
@@ -440,12 +458,47 @@ function parseNameplate(text) {
     ["ABB", /\bABB(?:\s+Motors?)?\b/i],
     ["WEG", /\bWEG\b/i],
     ["VEIT", /\bVEIT\b/i],
-    ["Barbanti", /\bBarbanti\b/i]
+    ["Barbanti", /\bBarbanti\b/i],
+    ["YASKAWA", /\bYASKAWA\b/i],
+    ["Schneider Electric", /\bSchneider\s+Electric\b/i],
+    ["KSB", /\bKSB(?:\s+(?:B\.V\.|SE\s*&\s*Co\.\s*KGaA|Pumps?))?\b/i],
+    ["Sulzer", /\bSULZER\b/i],
+    ["Leroy-Somer", /\b(?:Nidec\s+)?Leroy[\s-]*Somer\b/i],
+    ["Copeland", /\bCopeland\b/i],
+    ["EBARA", /\bEBARA\b/i],
+    ["Alfa Laval", /\bAlfa\s+Laval\b/i],
+    ["Festo", /\bFesto\b/i],
+    ["GEA", /\bGEA\b/i]
   ];
   const knownBrand = knownBrands.find(entry => entry[1].test(normalized));
   result.manufacturer = knownBrand ? knownBrand[0] : first(normalized, [
     /\b([A-Z][A-Za-z0-9&. -]{1,35}?(?:GmbH(?:\s*&\s*Co\.?)?|AG|Ltd\.?|S\.?A\.?|S\.?r\.?l\.?|Inc\.?|Corp\.?))(?=,|\n|$)/i
   ]);
+  if (result.manufacturer === "Leroy-Somer" && !result.serialNumber) {
+    result.serialNumber = first(normalized, [/(?:19|20)\d{2}\s+(\d{5,10})\b/]);
+  }
+  if ((result.manufacturer === "KSB" || result.manufacturer === "Sulzer") && !result.partNumber) {
+    result.partNumber = first(normalized, [/\bP[-.]?\s*No\.?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9 .\/_-]{4,40})/i, /\bID\s+([A-Z0-9][A-Z0-9._\/-]{5,30})\b/i]);
+  }
+  if (result.manufacturer === "Schneider Electric" && !result.model) {
+    result.model = first(normalized, [/(?:^|\n)\s*(LXM62[A-Z0-9]+)\s*(?:\n|$)/i]);
+  }
+  if (result.manufacturer === "Schneider Electric" && !result.serialNumber) {
+    result.serialNumber = first(normalized, [/\bCode\s*\n\s*(\d{8,14})\b/i, /(?:^|\n)\s*(\d{10})\s*\n\s*\d{1,2}\.\d{1,2}\.(?:19|20)\d{2}/i]);
+    if (result.serialNumber && result.partNumber === result.serialNumber) result.partNumber = "";
+  }
+  if (result.manufacturer === "EBARA" && !result.partNumber) {
+    result.partNumber = first(normalized, [/\bP\/?No\.?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{4,30})/i]);
+  }
+  if (result.manufacturer === "KSB" && !result.model) {
+    result.model = first(normalized, [/(?:^|\n)\s*((?:Movitec|Omega)\s+[A-Z0-9][A-Z0-9 .+_\/-]{2,40})\s*(?:\n|$)/i]);
+  }
+  if (result.manufacturer === "Sulzer" && !result.model) {
+    result.model = first(normalized, [/(?:^|\n)\s*((?:VMS|Sanimax|Sanimat|AHLSTAR)[A-Z0-9 .+_\/-]{2,40})\s*(?:\n|$)/i]);
+  }
+  if (result.manufacturer === "Copeland" && !result.model) {
+    result.model = first(normalized, [/\bModel\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]{4,40})/i]);
+  }
 
   // Description normally sits above the technical key/value rows.
   const technicalStart = lines.findIndex(line =>
