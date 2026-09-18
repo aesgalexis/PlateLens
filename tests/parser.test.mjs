@@ -123,6 +123,40 @@ const fixtures = [
       ipRating: 'IP55'
     }
   }
+  ,
+  {
+    name: 'VEIT real OCR',
+    text: '[LRONIN\nType L444010010\nFabr. Nr. 1200176573\nBaujahr/year 1997\nGewicht/weight kg 52\nVeit GmbH & Co., Justus-v.-Liebig-Str. 15, 86899 Landsberg/L., Germany\nSQAUGBUGELTISCH\nUCTION TRONING TABLE\nType 1444010010 Hz 50\nFabr.Nr. 1200176573 kW 1.0\nBaujahr/year 1997 A 1.8\nGewicht/weight kg 52 Volt~ 400',
+    expected: {
+      manufacturer: 'VEIT',
+      model: '1444010010',
+      serialNumber: '1200176573',
+      frequency: '50 Hz',
+      power: '1.0 kW',
+      current: '1.8 A',
+      voltage: '400 V',
+      year: '1997',
+      weight: '52 kg'
+    }
+  },
+  {
+    name: 'Barbanti real OCR',
+    text: 'CE\n©® barbanti\nBarbanti srl\nvia di Mezzo 78 - 41037 Mirandola (Mo) - ITALY\n(+39)053520023 barbanti@barbanti.it\nModello/Model G2 | Date:[ 02/24 ]\nMatricola/Serial number = 240059\nHe[SO] PH:[ 1] volt:[ 220\nTotal A: | - Total w:[ 4600 ]\nCaldaia/Bolier Lt: | 5 | w:[ 3000 ]\nRiscaldamento/Heating Elements: ae\nPressione aliment. aria/Air inlet pressure: BAR:[ 6,5 |\nPressione max vapore/Max steam pressure: BAR: . 4]\nMade in Italy',
+    expected: {
+      manufacturer: 'Barbanti',
+      model: 'G2',
+      serialNumber: '240059',
+      date: '02/24',
+      phases: '1',
+      frequency: '50 Hz',
+      power: '4600 W',
+      voltage: '220 V',
+      capacity: '5 L',
+      heatingPower: '3000 W',
+      airPressure: '6,5 bar',
+      steamPressure: '4 bar'
+    }
+  }
 ];
 
 for (const fixture of fixtures) {
