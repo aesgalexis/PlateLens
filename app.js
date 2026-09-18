@@ -200,6 +200,7 @@ analyzeBtn.addEventListener("click", async () => {
   try {
     const preparedImage = await prepareOcrImage(currentFile);
     let ocrPass = 1;
+    let orientationProbe = 0;
     let worker = null;
     try {
       worker = await Tesseract.createWorker("eng", 1, {
@@ -246,14 +247,6 @@ analyzeBtn.addEventListener("click", async () => {
       let result = await worker.recognize(orientedImage);
       let text = (result.data.text || "").trim();
 
-      if (Number(result.data.confidence || 0) < 42 || text.length < 24) {
-        progressText.textContent = "Low OCR confidence · checking original image…";
-        const fallback = await worker.recognize(orientedImage);
-        if (ocrScore(fallback) > ocrScore(result)) {
-          result = fallback;
-          text = (fallback.data.text || "").trim();
-        }
-      }
 
       if (needsTechnicalRegionRetry(text)) {
         ocrPass = 2;
