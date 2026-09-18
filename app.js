@@ -743,6 +743,7 @@ function parseNameplate(text) {
     /\b(\d+(?:[.,]\d+)?)\s*LTR\.?\b/i
   ]);
   if (result.volume && !/L$/i.test(result.volume)) result.volume += " L";
+  if (!result.capacity && result.volume) result.capacity = result.volume;
 
   result.heatingPower = first(normalized, [
     /(?:(?:Riscaldamento\s*\/\s*Heating\s*Elements?|Caldaia\s*\/\s*(?:Boiler|Bolier))[\s\S]{0,100}?\bW\s*[:=~.\-]*\s*[\[|:_-]*\s*)(\d+(?:[.,]\d+)?)/i
