@@ -26,3 +26,8 @@ Current coverage:
     Source: https://www.pisaniecommerce.com/en/motori/5271-weg-al90sl-04.html
 
 The fixtures intentionally model OCR-like text rather than pristine database values. New real failures should become regression cases before changing the parser.
+
+
+## Additional OCR regressions
+
+The automated parser suite also includes two noisy OCR snapshots from real VEIT and Barbanti plates. These are deliberately kept as imperfect OCR text so fixes are tested against the kind of output the browser actually produces, not only clean transcriptions.
