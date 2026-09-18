@@ -34,7 +34,8 @@ function setFile(file) {
   currentFile = file;
   const url = URL.createObjectURL(file);
   previewImage.onload = () => URL.revokeObjectURL(url);
-  previewImage.style.transform = "";\n  previewImage.src = url;
+  previewImage.style.transform = "";
+  previewImage.src = url;
   fileName.textContent = file.name || "Pasted image";
   dropZone.hidden = true;
   previewWrap.hidden = false;
@@ -427,7 +428,8 @@ function parseNameplate(text) {
 
   result.current = first(normalized, [
     /\b(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)*)[ \t]*A(?![-A-Z0-9])/i,
-    /(?:current|amp(?:s|ere)?|corriente|strom)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\s*A?\b/i,\n    /\b(\d+(?:[.,]\d+)?)\s*amper(?:e|ios?)?\b/i,
+    /(?:current|amp(?:s|ere)?|corriente|strom)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\s*A?\b/i,
+    /\b(\d+(?:[.,]\d+)?)\s*amper(?:e|ios?)?\b/i,
     /(?:^|\n)\s*A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
     /(?:baujahr\s*\/\s*year|baujahr|year)\s*[:#.-]?\s*(?:19|20)?\d{2}\s+A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i
   ]);
@@ -454,7 +456,9 @@ function parseNameplate(text) {
     /\bVolt\s*[~=:.-]*\s*[\[|:_-]*\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)(?=\s|\]|$)/i,
     /\bIN\s*:\s*(3x\d{2,4}\s*[-/]\s*\d{2,4})\s*V/i,
     /(?:voltage|volt|tension|spannung)\s*[:=~-]?\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V?\b/i,
-    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V\b/i,\n    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*Volt\b/i\n  ]);
+    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V\b/i,
+    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*Volt\b/i
+  ]);
   if (result.voltage && !/V$/i.test(result.voltage)) result.voltage += " V";
   const multiVoltages = uniqueValues([...normalized.matchAll(/\b(\d{3,4}Y?\s*\/\s*\d{3,4})\s*V\b/gi)].map(match => match[1]));
   if (multiVoltages.length > 1) result.voltage = joinRatings(multiVoltages, "V");
