@@ -697,6 +697,21 @@ const fixtures = [
     }
   },
   {
+    name: 'PHARMAGG false-positive rejection',
+    text: 'PHARMAGG\nTEMTECHNIK-GMBH\nKannegiesser-Gruppe\nTyp o\nTEMTECHNIK-GMBH\nBaujahr 2000\nNennfrequenz 50 Hz\nAnschlußwert 15,5 kW\n5 A\ni=3\nFU1400\nFabr. Nr. 14200005027\nNennstrom 32 A\nNennspannung 3 x 400 V\nSchutzart IP54',
+    expected: {
+      manufacturer: 'PHARMAGG',
+      model: 'FU1400',
+      serialNumber: '14200005027',
+      year: '2000',
+      voltage: '400 V',
+      current: '32 A',
+      power: '15,5 kW',
+      ipRating: 'IP54'
+    },
+    absent: ['ratio']
+  },
+  {
     name: 'PHARMAGG FU1400 noisy real OCR',
     text: 'PHARMAGG\nSYSTEMTECHNIK-CMBH\nKannegiesser’- Gruppe\nD 27318 Hoya\nTyp FU1400\nFabr.Nr. 14200005027\nBaujahr 2000\nSchaltplan.Nr. 05.027\nFüllraum 1402 ltr.\nzul.Trocken- füllmenge 140 kg\nNennspannung 3 X 400 V\nNennfrequenz 50 Hz\nSchleuderdreh -zahl nmax 660 U/min\nStromart AC\nKinetische Energie 338850 Nm\nNennstrom 32 A\nDruckluft Netzanschluß 10 bar\nAnschlußWert 15,5 kW\nDruckluft Betriebsdruck 6-8 bar\nAbsicherung 35 A\nBeheizungsart Dampf\nSchutzart IP54\nzul. Betriebstemperatur 95 C\nzulässiger Betriebsdruck 4-8 bar\nzul. Betriebsüberdruck 10 bar',
     expected: {
