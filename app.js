@@ -335,8 +335,9 @@ function parseNameplate(text) {
   ]);
   if (result.current && !/A$/i.test(result.current)) result.current += " A";
   const modelLineCurrentFalsePositive = result.current && lines.some(line => {
-    const ampValue = result.current.replace(/\s*A$/i, "");
-    return new RegExp("(?:^|\\s)" + ampValue.replace(/[.*+?^${}()|[\\]\\]/g, "\\  if (result.current && !/A$/i.test(result.current)) result.current += " A";") + "\\s*A\\b", "i").test(line) &&
+    const ampValue = result.current.replace(/\s*A$/i, "").toLowerCase();
+    const normalizedLine = line.toLowerCase();
+    return normalizedLine.includes(ampValue + " a") &&
       /^(?:Omega|Type|Typ|Model)\b/i.test(line) && !/\b(?:V|Hz|kW|W|current|amp|FLA|INPUT|OUTPUT)\b/i.test(line);
   });
   if (modelLineCurrentFalsePositive) result.current = "";
