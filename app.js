@@ -633,7 +633,8 @@ function parseNameplate(text) {
     /\b(trif[aá]sico)\b/i,
     /\b([13])\s*PH\b/i,
     /\b([13])\s*Phase\b/i,
-    /\b([13])\s*[-–]\s*Phase\b/i
+    /\b([13])\s*[-–]\s*Phase\b/i,
+    /\b([13])\s*[x×]\s*\d{2,4}\s*V\b/i
   ]);
   if (/^monof/i.test(result.phases || "")) result.phases = "1";
   if (/^trif/i.test(result.phases || "")) result.phases = "3";
