@@ -30,7 +30,7 @@ The fixtures intentionally model OCR-like text rather than pristine database val
 
 ## Additional OCR regressions
 
-The automated parser suite also includes two noisy OCR snapshots from real VEIT and Barbanti plates. These are deliberately kept as imperfect OCR text so fixes are tested against the kind of output the browser actually produces, not only clean transcriptions.
+The automated parser suite also includes noisy OCR snapshots from real VEIT, Barbanti and BLOCH plates. These are deliberately kept as imperfect OCR text so fixes are tested against the kind of output the browser actually produces, not only clean transcriptions. The BLOCH regression also verifies that a capacitor-only 450 V marking is not promoted to the motor supply voltage.
 
 
 ## Second public corpus
@@ -103,3 +103,27 @@ The automated parser suite also includes two noisy OCR snapshots from real VEIT 
     Source: https://mall.industry.siemens.com/mall/ES/ES/Catalog/Product/?mlfb=6SL3210-1PE24-5UL0
 40. Allen-Bradley PowerFlex 525 — Cat. No., 380…480 V, phase, amps, HP/kW, frame and IP/open-type format.
     Source: https://www.rockwellautomation.com/en-us/products/details.25B-D010N104.html
+
+
+## Fifth public corpus — official rating-plate examples
+
+41. WEG W20 General Purpose motor — motor code, duty/IP/insulation line and compact V/Hz/kW/RPM/A/PF/IE rating table.
+    Source: https://static.weg.net/medias/downloadcenter/h91/hba/WEG-WMO-weg-general-purpose-technical-catalogue-50130072-brochure-english-web.pdf
+42. WEG W51 HD motor — date-coded manufacture year, standalone serial, motor code, weight and compact electrical rating row.
+    Source: https://static.weg.net/medias/downloadcenter/h47/h1c/WEG-WMO-W51-HD-electric-motor-50118394-brochure-english-web.pdf
+43. ABB M3BP 160MLA process-performance motor — year/No. inline serial plus six-value IEC motor table and product data.
+    Source: https://library.e.abb.com/public/5b6a9a6942b248669d2ea09e16b134ac/9AKK105944%20ABB%20Low%20voltage%20Process%20performance%20motors_10-2025.pdf
+44. ABB M3BP 280SMA process-performance motor — larger-frame ABB rating plate, inline serial, product code, nmax and weight.
+    Source: https://library.e.abb.com/public/5b6a9a6942b248669d2ea09e16b134ac/9AKK105944%20ABB%20Low%20voltage%20Process%20performance%20motors_10-2025.pdf
+45. Schneider Electric Altivar 630 — catalog number, 4 kW / 5 HP rating, input/output columns, IP21 and long serial number.
+    Source: https://download.schneider-electric.com/files?filename=User+guide&p_Doc_Ref=EAV64301
+46. Mitsubishi Electric FR-E800 — MODEL / INPUT / OUTPUT / SERIAL rating-plate layout.
+    Source: https://dl.mitsubishielectric.com/dl/fa/document/manual/inv/ib0600860eng/ib0600860engk.pdf
+47. Allen-Bradley PowerFlex 755TM — custom catalog number, LD/ND/HD power/current groups, input/output ratings, control power and date.
+    Source: https://literature.rockwellautomation.com/idc/groups/literature/documents/um/750-um100_-es-p.pdf
+48. Siemens SIMOTICS S-1FT7 — motor order number, static/rated current, nmax/nN, induced voltage, brake and IP data.
+    Source: https://support.industry.siemens.com/cs/attachments/109482538/1FT7_config_man_0324_en-US.pdf
+49. Siemens SIMOTICS 1FG geared motor — spaced order number, gear ratio, n1max/n2max, motor current, brake and total weight.
+    Source: https://support.industry.siemens.com/cs/attachments/109747093/motion-control-D41-complete--English-02-2023-Update-2025-01.pdf
+50. Danfoss VLT AutomationDrive FC 302 enclosed drive — long T/C code, SN, mains-voltage class, model/power code and build-date convention.
+    Source: https://assets.danfoss.com/documents/274765/AQ262139143212en-000301.pdf
