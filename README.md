@@ -11,7 +11,7 @@ PlateLens is a small browser-based tool for technicians, maintainers and anyone 
 - Drop, choose or paste a nameplate photo.
 - OCR runs in the browser with Tesseract.js.
 - The image is not uploaded by PlateLens.
-- Common fields are detected automatically: manufacturer, model, serial number, voltage, frequency, power, current, speed, IP rating and year.
+- Common fields are detected automatically: manufacturer, equipment, model, serial/part number, date/year, phases, voltage, frequency, power, current, speed, IP rating, weight, capacity, ratio, flow/head and pressure.
 - Detected data is presented as an editable form.
 - Copy the result as plain text or JSON, or download a JSON record.
 - Raw OCR text remains visible for verification.
@@ -32,9 +32,21 @@ Then open <http://localhost:8080>.
 
 Live site: <https://aesgalexis.github.io/PlateLens/>\n\nThe site is intentionally static and can be published directly from the repository root with GitHub Pages.
 
+## Regression corpus
+
+The parser is checked against 10 real-world nameplate formats covering pumps, compressors, drives, industrial laundry equipment, gearboxes and several motor rating-table layouts.
+
+Run the regression set with:
+
+```bash
+node tests/parser.test.mjs
+```
+
+See `docs/test-corpus.md` for the source set and coverage.
+
 ## Roadmap
 
-1. Improve OCR preprocessing for angled, dirty and low-contrast plates.
+1. Expand OCR preprocessing for angled, dirty and low-contrast plates.
 2. Add equipment-aware field sets for motors, pumps, VFDs and industrial machines.
 3. Add optional vision-model extraction behind an explicit user action.
 4. Export CSV and printable technical cards.
