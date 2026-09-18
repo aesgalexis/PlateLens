@@ -697,6 +697,32 @@ const fixtures = [
     }
   },
   {
+    name: 'PHARMAGG FU1400 noisy real OCR',
+    text: 'PHARMAGG\nSYSTEMTECHNIK-CMBH\nKannegiesser’- Gruppe\nD 27318 Hoya\nTyp FU1400\nFabr.Nr. 14200005027\nBaujahr 2000\nSchaltplan.Nr. 05.027\nFüllraum 1402 ltr.\nzul.Trocken- füllmenge 140 kg\nNennspannung 3 X 400 V\nNennfrequenz 50 Hz\nSchleuderdreh -zahl nmax 660 U/min\nStromart AC\nKinetische Energie 338850 Nm\nNennstrom 32 A\nDruckluft Netzanschluß 10 bar\nAnschlußWert 15,5 kW\nDruckluft Betriebsdruck 6-8 bar\nAbsicherung 35 A\nBeheizungsart Dampf\nSchutzart IP54\nzul. Betriebstemperatur 95 C\nzulässiger Betriebsdruck 4-8 bar\nzul. Betriebsüberdruck 10 bar',
+    expected: {
+      manufacturer: 'PHARMAGG',
+      model: 'FU1400',
+      serialNumber: '14200005027',
+      year: '2000',
+      phases: '3',
+      voltage: '400 V',
+      frequency: '50 Hz',
+      current: '32 A',
+      power: '15,5 kW',
+      fuseRating: '35 A',
+      ipRating: 'IP54',
+      capacity: '140 kg',
+      volume: '1402 L',
+      speed: '660 rpm',
+      airSupplyPressure: '10 bar',
+      airPressure: '6-8 bar',
+      heatingType: 'Dampf',
+      operatingTemperature: '95 °C',
+      workingPressure: '4-8 bar',
+      overpressure: '10 bar'
+    }
+  },
+  {
     name: 'BLOCH damaged real OCR',
     text: 'se dE\nC€\nfay\n35/5 metros\nscas —1”X1"\nonofasico\n2850 om\n0.40 CV\n0.30 Kw\nIP 54\nndensador-8mF/450V\nAis. CL - E\nwww.bombashbloch.com\nMassaifassar - Valencia - (Spain)\nwww.bombasbloch.com\n40M\n35/5 m tros\n50 Hz\nMonofasico\n2850 rpm\n2 ampe\nCondensador-8mF/450V\nAisl. CL - E',
     expected: {
