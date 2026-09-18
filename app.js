@@ -280,7 +280,7 @@ function parseNameplate(text) {
     /(?:matricola\s*\/\s*serial\s*number|serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.=\-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|kW|KW|A|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
   ]);
   result.partNumber = first(normalized, [
-    /(?:part\s*(?:no|number)|p(?:\/|-|\.)?\s*no\.?|product\s*(?:no|number)|code|cat\.?\s*no)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
+    /(?:part\s*(?:no|number)|p\/n|p(?:\/|-|\.)?\s*no\.?|product\s*(?:no|number)|code|cat\.?\s*no)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
   ]);
 
   if (/^[\d\s]+$/.test(result.model)) result.model = result.model.replace(/\s+/g,"");
