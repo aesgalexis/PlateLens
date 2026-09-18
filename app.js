@@ -815,6 +815,12 @@ function parseNameplate(text) {
   if (result.manufacturer === "WEG" && !result.year) {
     result.year = first(normalized, [/\b\d{2}[A-Z]{3}(\d{2})\b/i]);
   }
+  if (result.manufacturer === "ABB" && !result.serialNumber) {
+    result.serialNumber = first(normalized, [
+      /\byear\s+(?:19|20)?\d{2}\s+No\.\s*([A-Z0-9][A-Z0-9._\/-]{6,30})/i,
+      /(?:^|\n)\s*No\.\s*([A-Z0-9][A-Z0-9._\/-]{6,30})\b/i
+    ]);
+  }
   if (result.manufacturer === "ABB" && !result.model) {
     result.model = first(normalized, [/(?:^|\n)\s*(ACS\d{3,4}-[A-Z0-9+._\/-]+)\s*(?:\n|$)/i]);
   }
