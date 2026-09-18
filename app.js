@@ -543,7 +543,7 @@ function detectFieldPresence(text) {
     airPressure: /\b(?:air\s+inlet\s+pressure|pressione\s+aliment\.?\s+aria)\b/i,
     steamPressure: /\b(?:max\s+steam\s+pressure|pressione\s+max\s+vapore)\b/i,
     speed: /\b(?:speed|velocidad|drehzahl|rpm|r\/min|min-?1|nmax|n1max|n2max|FLRPM)\b/i,
-    ipRating: /\b(?:degree\s+of\s+protection|protection\s+degree|IP\s*\d{0,2})\b/i,
+    ipRating: /\b(?:degree\s+of\s+protection|protection\s+degree|IP\s*(?:X\d|\d{0,2}))\b/i,
     cosPhi: /\b(?:cos\s*[φϕ]|cos\s*phi|power\s+factor|P\.\s*F\.?)\b/i,
     weight: /\b(?:weight|gewicht|peso|mass|mges)\b/i
   };
@@ -563,7 +563,7 @@ function parseNameplate(text) {
   // Prefer values explicitly attached to labels. Industrial plates often place
   // another label/value pair on the same OCR line, so each capture is bounded.
   result.model = first(normalized, [
-    /\\b(?:compressor|pump|unit)\\s+model\\s*[:#.-]?\\s*([A-Z0-9][A-Z0-9.+_\\/-]*(?:\\s+[A-Z0-9.+_\\/-]+){0,3})\\s*(?=\\n|$)/im,
+    /\b(?:compressor|pump|unit)\s+model\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,3})\s*(?=\n|$)/im,
     /(?:^|\n)\s*(?:n[°º]?\s*de\s*modele|modell|modello|modelo|model(?:\s*(?:no|number))?|type|tipo|typ|mod\.?|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:REV|INPUT|OUTPUT|Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N|Part\s*(?:No|Number)|Product\s*(?:No|Number))\b))/im
   ]);
   result.serialNumber = first(normalized, [
@@ -701,14 +701,14 @@ function parseNameplate(text) {
   if (multiVoltages.length > 1) result.voltage = joinRatings(multiVoltages, "V");
 
   result.capacity = first(normalized, [
-    /(?:capacity|capacit[aà])\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*(kg|L|Lt)?/i,
+    /(?:capacity|capacit[aà]|volume)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*(kg|L|Lt)?/i,
     /\bLt\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
     /(?:liters?|litres?|litri)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d+(?:[.,]\d+)?)\s*LTR\.?\b/i,
     /(?:APPROX\.?\s*)?U\.S\.\s*GALS?\.?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i
   ]);
   if (result.capacity) {
-    const cap = normalized.match(/(?:capacity|capacit[aà])\s*[:=~-]?\s*\d+(?:[.,]\d+)?\s*(kg|L|Lt)?/i);
+    const cap = normalized.match(/(?:capacity|capacit[aà]|volume)\s*[:=~-]?\s*\d+(?:[.,]\d+)?\s*(kg|L|Lt)?/i);
     const capUnit = cap && cap[1] ? (/kg/i.test(cap[1]) ? "kg" : "L") : (/\bLt\b|liters?|litres?|litri/i.test(normalized) ? "L" : "");
     if (capUnit && !new RegExp(capUnit + "$", "i").test(result.capacity)) result.capacity += " " + capUnit;
   }
@@ -740,7 +740,7 @@ function parseNameplate(text) {
   result.weight = first(normalized, [
     /(?:gewicht\s*\/\s*weight|gewicht|weight|mass|peso)\s*(?:kg)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i
   ]);
-  if (!result.weight && !/(?:capacity|capacit[aà])\b/i.test(normalized)) {
+  if (!result.weight && !/(?:capacity|capacit[aà]|volume)\b/i.test(normalized)) {
     result.weight = first(normalized, [/\b(\d+(?:[.,]\d+)?)\s*kg(?!\s*\/\s*h)\b/i]);
   }
   if (result.weight && !/kg$/i.test(result.weight)) result.weight += " kg";
@@ -770,7 +770,7 @@ function parseNameplate(text) {
   if (result.head && !/m$/i.test(result.head)) result.head += " m";
 
   result.workingPressure = first(normalized, [
-    /\bRATED\s+OPERATING\s+PRESSURE\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*PSIG\b/i,
+    /\b(?:RATED|FULL\s+LOAD)\s+OPERATING\s+PRESSURE\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*PSIG\b/i,
     /\bMAX\.?\s*(?:SERVICE\s+)?PRESS(?:URE)?\.?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*(PSI|PSIG|bar)\b/i,
     /\bMAWP\s*(\d+(?:[.,]\d+)?)\s*PSI\b/i,
     /\bPRESSURE\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*PSI\b/i,
@@ -797,7 +797,7 @@ function parseNameplate(text) {
     /(?:^|\n)\s*(?:RPM|r\/min|min-1|min⁻¹)\s*[:=~-]?\s*(\d{2,5})\b/i
   ]);
   if (result.speed && !/rpm$/i.test(result.speed)) result.speed += " rpm";
-  result.ipRating = first(normalized, [/(\bIP\s*\d{2}[A-Z]?\b)/i]);
+  result.ipRating = first(normalized, [/(\bIP\s*(?:X\d|\d{2})[A-Z]?\b)/i]);
   result.cosPhi = first(normalized, [
     /(?:cos\s*[φϕø]|power\s*factor|pf)\s*[:=-]?\s*(0[.,]\d{1,3})/i
   ]);
@@ -875,7 +875,7 @@ function parseNameplate(text) {
     /\b([A-Z][A-Za-z0-9&. -]{1,35}?(?:GmbH(?:\s*&\s*Co\.?)?|AG|Ltd\.?|S\.?A\.?|S\.?r\.?l\.?|Inc\.?|Corp\.?))(?=,|\n|$)/i
   ]);
   if (result.manufacturer === "Leroy-Somer" && !result.serialNumber) {
-    result.serialNumber = first(normalized, [/(?:19|20)\d{2}\s+(\d{5,10})\b/]);
+    result.serialNumber = first(normalized, [/(?:19|20)\d{2}\s+([A-Z]?\d{5,10})\b/i]);
   }
   if (result.manufacturer === "KSB") {
     const ksbPart = first(normalized, [
