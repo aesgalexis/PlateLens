@@ -23,25 +23,48 @@ const recordForm = document.querySelector("#recordForm");
 const showEmptyBtn = document.querySelector("#showEmptyBtn");
 let currentFile = null;
 let showEmptyFields = false;
+let detectedFieldPresence = new Set();
 
 for (const [name,label] of fields) {
   const wrapper = document.createElement("label");
   wrapper.className = "field";
   wrapper.dataset.field = name;
-  wrapper.innerHTML = `<span>${label}</span><input name="${name}" autocomplete="off">`;
+  wrapper.innerHTML = `<span>${label}</span><input name="${name}" autocomplete="off"><small class="field-note" aria-live="polite"></small>`;
   formGrid.appendChild(wrapper);
 }
 
 function updateFieldVisibility() {
-  let visible = 0;
+  let readable = 0;
+  let unreadable = 0;
   for (const [name] of fields) {
     const inputEl = recordForm.elements[name];
     const wrapper = inputEl.closest(".field");
+    const note = wrapper.querySelector(".field-note");
     const hasValue = Boolean(String(inputEl.value || "").trim());
-    wrapper.hidden = !showEmptyFields && !hasValue;
-    if (hasValue) visible++;
+    const labelDetected = detectedFieldPresence.has(name);
+    const knownButUnreadable = labelDetected && !hasValue;
+
+    wrapper.hidden = !showEmptyFields && !hasValue && !knownButUnreadable;
+    wrapper.classList.toggle("field--unreadable", knownButUnreadable);
+    wrapper.classList.toggle("field--empty", !hasValue && !knownButUnreadable);
+
+    if (knownButUnreadable) {
+      inputEl.placeholder = "Detected, unreadable";
+      note.textContent = "Detected on plate · unreadable";
+      unreadable++;
+    } else if (!hasValue && showEmptyFields) {
+      inputEl.placeholder = "";
+      note.textContent = "Not detected";
+    } else {
+      inputEl.placeholder = "";
+      note.textContent = "";
+    }
+
+    if (hasValue) readable++;
   }
-  fieldCount.textContent = visible + " field" + (visible === 1 ? "" : "s") + " detected";
+  const parts = [readable + " read"];
+  if (unreadable) parts.push(unreadable + " unreadable");
+  fieldCount.textContent = parts.join(" · ");
   showEmptyBtn.textContent = showEmptyFields ? "Hide empty fields" : "Show empty fields";
 }
 
@@ -87,7 +110,7 @@ function reset() {
   previewWrap.hidden = true; dropZone.hidden = false; resultsSection.hidden = true;
   analyzeBtn.disabled = true; resetBtn.hidden = true; progressBar.style.width = "0%";
   progressText.textContent = "Choose an image to begin."; rawText.textContent = "";
-  recordForm.reset(); showEmptyFields = false; updateFieldVisibility();
+  recordForm.reset(); showEmptyFields = false; detectedFieldPresence = new Set(); updateFieldVisibility();
 }
 
 async function prepareOcrImage(file) {
@@ -412,7 +435,7 @@ analyzeBtn.addEventListener("click", async () => {
 
       rawText.textContent = text || "No readable text detected.";
       const parsed = parseNameplate(text);
-      fillForm(parsed);
+      fillForm(parsed, detectFieldPresence(text));
       resultsSection.hidden = false;
       resultsSection.scrollIntoView({behavior:"smooth",block:"start"});
       progressText.textContent = "OCR complete. Verify the extracted values.";
@@ -493,6 +516,40 @@ function parseMotorTable(lines) {
     cosPhi: uniqueValues(rows.map(row => row.cosPhi).filter(Boolean)).join(" / ")
   };
 }
+function detectFieldPresence(text) {
+  const source = String(text || "").replace(/\r/g, "");
+  const patterns = {
+    manufacturer: /\b(?:manufacturer|fabricante|hersteller|costruttore)\b/i,
+    equipment: /\b(?:equipment|description|machine|maquina|máquina|anlage|apparato)\b/i,
+    model: /\b(?:model(?:lo|o)?|type|tipo|typ|t\/c)\b/i,
+    serialNumber: /\b(?:serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\/n|sn\b|matricola|fabr\.?\s*nr\.?|works\s*n[°º]?|n[°º]?\s*de\s*serie)\b/i,
+    partNumber: /\b(?:part\s*(?:no|number)|p\/n|product\s*(?:no|number|code)|article\s*no\.?|cat\.?\s*no|cod\.?)\b/i,
+    orderNumber: /\b(?:work\s+order|order\s*(?:no|number)?|o\/n)\b/i,
+    date: /\b(?:date|build\s+date|prod\.?\s*date|manufactur(?:ing|ed)\s+date)\b/i,
+    year: /\b(?:year|baujahr|anno|año|yr\b)\b/i,
+    phases: /\b(?:ph(?:ase|ases)?|fasi|monof[aá]sico|trif[aá]sico)\b/i,
+    voltage: /\b(?:volt(?:age|s)?|spannung|tension|tensión|U\s*\(\s*V\s*\)|rated\s+voltage|mains\s+voltage)\b/i,
+    frequency: /\b(?:frequency|frecuencia|frequenz|freq\.?|F\s*\(\s*Hz\s*\)|Hz)\b/i,
+    power: /\b(?:power|potencia|leistung|rated\s+power|input\s+power|total\s+W|kW|HP|CV|P2)\b/i,
+    apparentPower: /\b(?:apparent\s+power|kVA)\b/i,
+    current: /\b(?:current|corriente|strom|amps?|ampere|amperios|F\.\s*L\.\s*A\.?|FLA|I\s*\(\s*A\s*\))\b/i,
+    capacity: /\b(?:capacity|capacidad|capacità|liters?|litres?|litri|Lt\b|LTR\b)\b/i,
+    refrigerant: /\b(?:refrigerant|refrig\.?|kältemittel|fluide\s+frigorigène)\b/i,
+    ratio: /\b(?:ratio|reduction|reducci[oó]n|übersetzung|i\s*=)\b/i,
+    flow: /\b(?:flow|caudal|portata|durchfluss|Q\s*[:=])\b/i,
+    head: /\b(?:head|altura|prevalenza|förderhöhe|H\s*[:=])\b/i,
+    workingPressure: /\b(?:working\s+pressure|max\.?\s*pressure|pressure|presi[oó]n|pressione|druck|MAWP|pmax|PS\b)\b/i,
+    heatingPower: /\b(?:heating\s+elements?|riscaldamento|heater\s+power)\b/i,
+    airPressure: /\b(?:air\s+inlet\s+pressure|pressione\s+aliment\.?\s+aria)\b/i,
+    steamPressure: /\b(?:max\s+steam\s+pressure|pressione\s+max\s+vapore)\b/i,
+    speed: /\b(?:speed|velocidad|drehzahl|rpm|r\/min|min-?1|nmax|n1max|n2max|FLRPM)\b/i,
+    ipRating: /\b(?:degree\s+of\s+protection|protection\s+degree|IP\s*\d{0,2})\b/i,
+    cosPhi: /\b(?:cos\s*[φϕ]|cos\s*phi|power\s+factor|P\.\s*F\.?)\b/i,
+    weight: /\b(?:weight|gewicht|peso|mass|mges)\b/i
+  };
+  return new Set(Object.entries(patterns).filter(([, pattern]) => pattern.test(source)).map(([name]) => name));
+}
+
 function parseNameplate(text) {
   const normalized = text
     .replace(/[–—]/g,"-")
@@ -906,8 +963,9 @@ function parseNameplate(text) {
   return result;
 }
 
-function fillForm(data) {
+function fillForm(data, presence = new Set()) {
   showEmptyFields = false;
+  detectedFieldPresence = new Set(presence);
   for (const [name] of fields) {
     const element = recordForm.elements[name];
     element.value = data[name] || "";
@@ -918,10 +976,12 @@ function fillForm(data) {
 function record() {
   const formData = new FormData(recordForm);
   const values = Object.fromEntries(formData.entries());
+  const fieldsOut = Object.fromEntries(Object.entries(values).filter(([,v]) => String(v).trim() !== ""));
   return {
     source: "PlateLens",
     capturedAt: new Date().toISOString(),
-    fields: Object.fromEntries(Object.entries(values).filter(([,v]) => String(v).trim() !== "")),
+    fields: fieldsOut,
+    unreadableFields: [...detectedFieldPresence].filter(name => !String(values[name] || "").trim()),
     rawOcr: rawText.textContent
   };
 }
