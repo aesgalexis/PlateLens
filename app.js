@@ -734,7 +734,7 @@ function parseNameplate(text) {
   ]);
   if (result.capacity) {
     const cap = normalized.match(/(?:capacity|capacit[aà]|trocken[\s-]*f[üu]llmenge|fullmenge|füllmenge)\s*[:=~-]?\s*\d+(?:[.,]\d+)?\s*(kg|L|Lt)?/i);
-    const capUnit = cap && cap[1] ? (/kg/i.test(cap[1]) ? "kg" : "L") : (/Trocken[\s-]*f[üu]llmenge|fullmenge|füllmenge/i.test(normalized) ? "kg" : "");
+    const capUnit = cap && cap[1] ? (/kg/i.test(cap[1]) ? "kg" : "L") : (/Trocken[\s-]*f[üu]llmenge|fullmenge|füllmenge/i.test(normalized) ? "kg" : (/\bLt\b|liters?|litres?|litri/i.test(normalized) ? "L" : ""));
     if (capUnit && !new RegExp(capUnit + "$", "i").test(result.capacity)) result.capacity += " " + capUnit;
   }
 
