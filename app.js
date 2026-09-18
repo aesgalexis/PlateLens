@@ -162,17 +162,27 @@ function ocrScore(result) {
   const confidence = Number(result?.data?.confidence || 0);
   return confidence + Math.min(30, text.length / 8);
 }
-function needsLayoutRetry(text) {
-  const valueSignals = (text.match(/\b(?:Hz|kW|Volt|V|A|rpm|r\/min|min-?1|bar|psig)\b/gi) || []).length;
-  const labelSignals = (text.match(/\b(?:type|typ|model|modello|serial|matricola|fabr\.?\s*nr|year|baujahr|weight|gewicht|voltage|volt|current|power)\b/gi) || []).length;
-  return text.trim().length >= 24 && labelSignals >= 2 && valueSignals < 3;
+function extractionCoverage(text) {
+  const parsed = parseNameplate(text);
+  const technicalKeys = ["voltage","frequency","power","apparentPower","current","speed","capacity","flow","head","workingPressure","airPressure","steamPressure"];
+  const identityKeys = ["manufacturer","model","serialNumber","partNumber","orderNumber"];
+  const technicalCount = technicalKeys.filter(key => Boolean(parsed[key])).length;
+  const identityCount = identityKeys.filter(key => Boolean(parsed[key])).length;
+  const fieldCount = Object.values(parsed).filter(Boolean).length;
+  const unitSignals = (String(text || "").match(/\b(?:Hz|kW|kVA|Volt|V|A|amper|rpm|r\/min|min-?1|bar|mbar|psi|psig|kg|m3\/h|m³\/h|lts?\/hora)\b/gi) || []).length;
+  return {parsed, technicalCount, identityCount, fieldCount, unitSignals};
+}
+function needsSparseRetry(text) {
+  const coverage = extractionCoverage(text);
+  return coverage.technicalCount < 4 || coverage.fieldCount < 6 || coverage.unitSignals < 4;
 }
 function needsTechnicalRegionRetry(text) {
-  const parsed = parseNameplate(text);
-  const technicalKeys = ["voltage","frequency","power","current","speed","capacity","flow","head","workingPressure","airPressure","steamPressure"];
-  const technicalCount = technicalKeys.filter(key => Boolean(parsed[key])).length;
-  const hasIdentity = Boolean(parsed.model || parsed.serialNumber || parsed.manufacturer);
-  return hasIdentity && technicalCount < 3;
+  const coverage = extractionCoverage(text);
+  return coverage.technicalCount < 4 || coverage.fieldCount < 6;
+}
+function needsLayoutRetry(text) {
+  const coverage = extractionCoverage(text);
+  return coverage.technicalCount < 4 && coverage.fieldCount < 8;
 }
 
 function mergeOcrTexts(...texts) {
@@ -214,8 +224,8 @@ analyzeBtn.addEventListener("click", async () => {
               base = orientationProbe * 6;
               span = 6;
             } else {
-              base = ocrPass === 1 ? 28 : (ocrPass === 2 ? 76 : 91);
-              span = ocrPass === 1 ? 47 : (ocrPass === 2 ? 14 : 7);
+              base = ocrPass === 1 ? 28 : (ocrPass === 2 ? 67 : (ocrPass === 3 ? 82 : 93));
+              span = ocrPass === 1 ? 38 : (ocrPass === 2 ? 13 : (ocrPass === 3 ? 10 : 5));
             }
             const pct = Math.min(98, base + Math.round(m.progress * span));
             progressBar.style.width = pct + "%";
@@ -247,24 +257,40 @@ analyzeBtn.addEventListener("click", async () => {
       });
 
       let result = await worker.recognize(orientedImage);
-      let text = (result.data.text || "").trim();
+      // The low-resolution SPARSE_TEXT orientation probe often recovers labels
+      // that AUTO misses on reflective or grid-lined metal plates. Keep it.
+      let text = mergeOcrTexts(orientation.text, result.data.text);
 
+      if (needsSparseRetry(text)) {
+        ocrPass = 2;
+        progressText.textContent = "Recovering sparse technical text…";
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+          preserve_interword_spaces: "1"
+        });
+        const sparseResult = await worker.recognize(orientedImage);
+        text = mergeOcrTexts(text, sparseResult.data.text);
+      }
 
       if (needsTechnicalRegionRetry(text)) {
-        ocrPass = 2;
+        ocrPass = 3;
         progressText.textContent = "Reading technical region…";
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+          preserve_interword_spaces: "1"
+        });
         const technicalRegion = {
           left: Math.round(orientedImage.width * 0.04),
-          top: Math.round(orientedImage.height * 0.20),
+          top: Math.round(orientedImage.height * 0.16),
           width: Math.round(orientedImage.width * 0.92),
-          height: Math.round(orientedImage.height * 0.60)
+          height: Math.round(orientedImage.height * 0.68)
         };
         const regionResult = await worker.recognize(orientedImage, {rectangle: technicalRegion});
         text = mergeOcrTexts(text, regionResult.data.text);
       }
 
       if (needsLayoutRetry(text)) {
-        ocrPass = 3;
+        ocrPass = 4;
         progressText.textContent = "Reading technical layout…";
         await worker.setParameters({
           tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
