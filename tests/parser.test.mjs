@@ -156,6 +156,141 @@ const fixtures = [
       airPressure: '6,5 bar',
       steamPressure: '4 bar'
     }
+  },
+  {
+    name: 'Yaskawa P1000 drive',
+    text: 'YASKAWA ELECTRIC CORPORATION\nMODEL: CIMR-PU2A0004FAA REV: A\nINPUT: AC3PH 200-240V 50/60Hz 3.9A\nOUTPUT: AC3PH 0-240V 0-400Hz 3.5A\nMASS: 3.3 kg PRG: 8500\nO/N: 6W3050-0-100 VAJ123456\nS/N: J0073D207410100\nFILE NO: E131457\nIP20',
+    expected: {
+      manufacturer: 'YASKAWA',
+      model: 'CIMR-PU2A0004FAA',
+      serialNumber: 'J0073D207410100',
+      voltage: '200-240 V',
+      frequency: '50/60 Hz',
+      current: '3.9 A',
+      weight: '3.3 kg',
+      ipRating: 'IP20'
+    }
+  },
+  {
+    name: 'Schneider Lexium 62',
+    text: 'Schneider Electric\nLXM62DU60C21000\nInput ac/dc 250-700 Vdc 20 A\nOutput ac/dc 0-600 Vac 6 A\nControl Voltage 24 Vdc\nIP20\nCode\n2528128802\n10.11.2015\nRS 01',
+    expected: {
+      manufacturer: 'Schneider Electric',
+      model: 'LXM62DU60C21000',
+      serialNumber: '2528128802',
+      date: '10.11.2015',
+      voltage: '250-700 V',
+      ipRating: 'IP20'
+    }
+  },
+  {
+    name: 'Danfoss rotary compressor',
+    text: 'Danfoss\nModel no VRN752WTTENA\nSerial no 0745U6705238\nRefrigerant R290\n215V\n900-7200r/min\nPS 25bar\nTS max 125°C\nTS min -25°C\nVolume 1.5L\nPOE\n2023.05.26',
+    expected: {
+      manufacturer: 'Danfoss',
+      model: 'VRN752WTTENA',
+      serialNumber: '0745U6705238',
+      refrigerant: 'R290',
+      voltage: '215 V',
+      speed: '900-7200 rpm',
+      workingPressure: '25 bar',
+      date: '2023.05.26'
+    }
+  },
+  {
+    name: 'Danfoss MLM compressor',
+    text: 'Danfoss Compressor\nModel MLM090T4LC9\nSerial number MH2500000001\n380-415 V 3~ 50 Hz\nStarting current 147 A\nMaximum running current 26 A\nPS 25 bar\nPS 31.1 bar\nTS 55°C 150°C -35°C\nVolume 13.6 L\nOil 0.7 L\nMineral oil 160P\nRefrigerant R22',
+    expected: {
+      manufacturer: 'Danfoss',
+      model: 'MLM090T4LC9',
+      serialNumber: 'MH2500000001',
+      refrigerant: 'R22',
+      voltage: '380-415 V',
+      frequency: '50 Hz',
+      current: '147 A',
+      workingPressure: '25 bar'
+    }
+  },
+  {
+    name: 'KSB Movitec',
+    text: 'KSB B.V.\nMovitec VCF 90/2-1 B\nFrame 160 (12,2kW) 50 Hz\nID 9972040368\nSeal SiC/Ca/EPDM\nQ 85 m3/h PN25 -20/+100 °C\nH 38.1m\nn fix. 2900 rpm\nPO 700041712\nProd. 45/2011\n979441-0123',
+    expected: {
+      manufacturer: 'KSB',
+      model: 'Movitec VCF 90/2-1 B',
+      partNumber: '9972040368',
+      date: '45/2011',
+      power: '12,2 kW',
+      frequency: '50 Hz',
+      flow: '85 m3/h',
+      head: '38.1 m',
+      speed: '2900 rpm'
+    }
+  },
+  {
+    name: 'KSB Omega',
+    text: 'KSB SE & Co. KGaA\n2016\nOmega 250 - 600 A\nP-No. 9971423078 / 000100\nQ 1050 m3/h H 120 m\nn 1475 1/min\nSNr. 24 15 26\nGew. 1090 kg\nMat.-No. 01 111 383',
+    expected: {
+      manufacturer: 'KSB',
+      model: 'Omega 250 - 600 A',
+      year: '2016',
+      partNumber: '9971423078 / 000100',
+      flow: '1050 m3/h',
+      head: '120 m',
+      speed: '1475 rpm',
+      weight: '1090 kg'
+    }
+  },
+  {
+    name: 'Sulzer VMS',
+    text: 'SULZER\nVMS H 6-200\n15.0 kW (25.8 A) 50 Hz\nID 25065200\nQ 6.5 m3/h\nH 321.4 m\nn fix 2850 rpm\nHydr. PN40 +120°C\nPO 6000129185\nProd 26/2014/1126622-3476',
+    expected: {
+      manufacturer: 'Sulzer',
+      model: 'VMS H 6-200',
+      partNumber: '25065200',
+      power: '15.0 kW',
+      current: '25.8 A',
+      frequency: '50 Hz',
+      flow: '6.5 m3/h',
+      head: '321.4 m',
+      speed: '2850 rpm'
+    }
+  },
+  {
+    name: 'Leroy-Somer Dynect motor',
+    text: 'Nidec Leroy-Somer\n3~ LSHRM 315 MP TC\n2019 686251 C19 001\nIP55 IK08\n711 kg\nTa 50°C\nIns. cl. F\nS9\nIE5',
+    expected: {
+      manufacturer: 'Leroy-Somer',
+      model: 'LSHRM 315 MP TC',
+      year: '2019',
+      serialNumber: '686251',
+      ipRating: 'IP55',
+      weight: '711 kg'
+    }
+  },
+  {
+    name: 'Copeland compressor',
+    text: 'Copeland\nModel 4RH1-2500-TMK-105\nSerial C69G19417\n380-420 V / 3 / 50 Hz\n460 V / 3 / 60 Hz\n25 HP',
+    expected: {
+      manufacturer: 'Copeland',
+      model: '4RH1-2500-TMK-105',
+      serialNumber: 'C69G19417',
+      voltage: '380-420 V',
+      frequency: '50 Hz'
+    }
+  },
+  {
+    name: 'EBARA EVM pump',
+    text: 'EBARA\nMADE IN ITALY\nTYPE EVM32 1-0F6/4.0\nP/No 12345678\nQ 32 m3/h\nH 55 m\nHmax 80 m\nP2 4.0 kW\nHz 60\n3450 min-1',
+    expected: {
+      manufacturer: 'EBARA',
+      model: 'EVM32 1-0F6/4.0',
+      partNumber: '12345678',
+      flow: '32 m3/h',
+      head: '55 m',
+      power: '4.0 kW',
+      frequency: '60 Hz',
+      speed: '3450 rpm'
+    }
   }
 ];
 
