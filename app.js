@@ -137,6 +137,62 @@ function rotateCanvas(source, degrees, maxSide = null) {
   return canvas;
 }
 
+
+function makeBinaryVariant(source) {
+  const canvas = document.createElement("canvas");
+  canvas.width = source.width;
+  canvas.height = source.height;
+  const ctx = canvas.getContext("2d", {willReadFrequently:true});
+  ctx.drawImage(source, 0, 0);
+  const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = image.data;
+  const histogram = new Array(256).fill(0);
+
+  for (let i = 0; i < data.length; i += 4) histogram[data[i]]++;
+
+  const total = canvas.width * canvas.height;
+  let sum = 0;
+  for (let i = 0; i < 256; i++) sum += i * histogram[i];
+
+  let sumB = 0;
+  let weightB = 0;
+  let bestVariance = -1;
+  let threshold = 145;
+
+  for (let i = 0; i < 256; i++) {
+    weightB += histogram[i];
+    if (!weightB) continue;
+    const weightF = total - weightB;
+    if (!weightF) break;
+    sumB += i * histogram[i];
+    const meanB = sumB / weightB;
+    const meanF = (sum - sumB) / weightF;
+    const variance = weightB * weightF * (meanB - meanF) * (meanB - meanF);
+    if (variance > bestVariance) {
+      bestVariance = variance;
+      threshold = i;
+    }
+  }
+
+  let white = 0;
+  let black = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const value = data[i] > threshold ? 255 : 0;
+    data[i] = data[i + 1] = data[i + 2] = value;
+    if (value) white++; else black++;
+  }
+
+  if (black > white) {
+    for (let i = 0; i < data.length; i += 4) {
+      const value = 255 - data[i];
+      data[i] = data[i + 1] = data[i + 2] = value;
+    }
+  }
+
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+}
+
 async function detectBestOrientation(worker, source, onProbe) {
   const candidates = [0, 90, 180, 270];
   let best = {angle:0, score:-Infinity, text:"", confidence:0};
@@ -293,8 +349,20 @@ analyzeBtn.addEventListener("click", async () => {
         text = mergeOcrTexts(text, sparseResult.data.text);
       }
 
-      if (needsTechnicalRegionRetry(text)) {
+      if (needsSparseRetry(text)) {
         ocrPass = 3;
+        progressText.textContent = "Reading high-contrast plate…";
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+          preserve_interword_spaces: "1"
+        });
+        const binaryImage = makeBinaryVariant(orientedImage);
+        const binaryResult = await worker.recognize(binaryImage);
+        text = mergeOcrTexts(text, binaryResult.data.text);
+      }
+
+      if (needsTechnicalRegionRetry(text)) {
+        ocrPass = 4;
         progressText.textContent = "Reading technical region…";
         await worker.setParameters({
           tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
@@ -311,7 +379,7 @@ analyzeBtn.addEventListener("click", async () => {
       }
 
       if (needsLayoutRetry(text)) {
-        ocrPass = 4;
+        ocrPass = 5;
         progressText.textContent = "Reading technical layout…";
         await worker.setParameters({
           tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
@@ -408,6 +476,8 @@ function parseNameplate(text) {
   const normalized = text
     .replace(/[–—]/g,"-")
     .replace(/Ø/g,"0")
+    .replace(/\bm\s+tros\b/gi,"metros")
+    .replace(/\bampe\b/gi,"amper")
     .replace(/[ \t]+/g," ");
   const lines = normalized.split(/\r?\n/).map(clean).filter(Boolean);
   const result = {};
@@ -418,7 +488,7 @@ function parseNameplate(text) {
     /(?:^|\n)\s*(?:n[°º]?\s*de\s*modele|modell|modello|modelo|model(?:\s*(?:no|number))?|type|tipo|typ|mod\.?|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:REV|INPUT|OUTPUT|Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N|Part\s*(?:No|Number)|Product\s*(?:No|Number))\b))/im
   ]);
   result.serialNumber = first(normalized, [
-    /(?:matricola\s*\/\s*serial\s*number|n[°º]?\s*de\s*serie|works\s*n[°º]?|serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.=\-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|kW|KW|A|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
+    /(?:matricola\s*\/\s*serial\s*number|n[°º]?\s*de\s*serie|works\s*n[°º]?|serial(?:\s*(?:no|number|nr|n[°º.]?))?|(?:^|\n)\s*No\.?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.=\-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|kW|KW|A|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
   ]);
   result.partNumber = first(normalized, [
     /(?:part\s*(?:no|number)|p\/n|p(?:\/|-|\.)?\s*no\.?|product\s*(?:no|number)|article\s*no\.?|cod\.?|code|cat\.?\s*no(?:\.\/part\s*no\.?)?)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
@@ -442,7 +512,7 @@ function parseNameplate(text) {
   }
 
   result.date = first(normalized, [
-    /\bDate(?:\s*\(YYMM\))?\s*[:#.-]?\s*[\[|:_-]*\s*((?:(?:0?[1-9]|1[0-2])\s*[\/.-]\s*\d{2,4}|(?:19|20)\d{2}[.-]\d{1,2}(?:[.-]\d{1,2})?|\d{4}))/i,
+    /\bDate(?:\s*\(YYMM\))?\s*[:#.-]?\s*[\[|:_-]*\s*((?:(?:0?[1-9]|1[0-2])\s*[\/.-]\s*\d{2,4}|(?:19|20)\d{2}[.\/-]\d{1,2}(?:[.\/-]\d{1,2})?|\d{4}))/i,
     /(?:^|\n)\s*((?:19|20)\d{2}[.-]\d{1,2}[.-]\d{1,2})\s*(?:\n|$)/i,
     /(?:^|\n)\s*(\d{1,2}\.\d{1,2}\.(?:19|20)\d{2})\s*(?:\n|$)/i,
     /\bProd\.?\s*((?:\d{1,2})\s*\/\s*(?:19|20)\d{2})\b/i
@@ -491,7 +561,7 @@ function parseNameplate(text) {
     /(?:current|amp(?:s|ere)?|corriente|strom)[ \t]*[:=~-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)*)[ \t]*A?\b/i,
     /(?:F\.[ \t]*L\.[ \t]*A\.?|FLAMPS|AMPS?|I[ \t]*\([ \t]*A[ \t]*\))[ \t]*[:=.-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?){0,3})\b/i,
     /\b(\d+(?:[.,]\d+)?)\s*Amps?\b/i,
-    /\b(\d+(?:[.,]\d+)?)\s*amper(?:e|ios?)?\b/i,
+    /\b(\d+(?:[.,]\d+)?)\s*ampe(?:r(?:e|ios?)?)?\b/i,
     /(?:^|\n)\s*A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
     /(?:baujahr\s*\/\s*year|baujahr|year)\s*[:#.-]?\s*(?:19|20)?\d{2}\s+A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i
   ]);
@@ -615,6 +685,7 @@ function parseNameplate(text) {
     if (!/(?:bar|psig)$/i.test(result.workingPressure)) result.workingPressure += " " + pressureUnit;
   }
   result.speed = first(normalized, [
+    /\bn1\s*max\s*[:=.-]?\s*(\d{2,5})\s*(?:\/min|r\/?min|rpm)\b/i,
     /(?:^|\n)\s*(?:R\.[ \t]*P\.[ \t]*M\.?|RPM|FLRPM|F\.[ \t]*L\.[ \t]*RPM)[ \t]*[:=.-]?[ \t]*(\d{2,5}(?:[ \t]*\/[ \t]*\d{2,5}){0,3})\b/i,
     /\bINPUT\s+RPM\s*[:=.-]?\s*(\d{2,5})\b/i,
     /\bn\s*max\s*[:=.-]?\s*(\d{2,5})\s*(?:U\/min|1\/min|r\/?min|rpm)\b/i,
@@ -653,7 +724,7 @@ function parseNameplate(text) {
     ["Alfa Laval", /\bAlfa\s+Laval\b/i],
     ["Festo", /\bFesto\b/i],
     ["GEA", /\bGEA\b/i],
-    ["BLOCH", /\bBLOCH\b/i],
+    ["BLOCH", /(?:\bBLOCH\b|bombas?h?bloch\.com)/i],
     ["Trane", /\bTRANE\b/i],
     ["Cleaver-Brooks", /\bCleaver[\s-]*Brooks\b/i],
     ["Parker", /\bParker\b/i],
@@ -723,6 +794,18 @@ function parseNameplate(text) {
     const gals = first(normalized, [/(?:APPROX\.\s*)?U\.S\.\s*GALS\.\s*(\d+(?:[.,]\d+)?)/i]);
     if (gals) result.capacity = gals + " US gal";
   }
+  if (result.manufacturer === "WEG" && !result.model) {
+    result.model = first(normalized, [
+      /(?:^|\n)\s*(W3[A-Z0-9._\/-]{7,})\s*(?:\n|$)/i,
+      /(?:^|\n)\s*(\d{3}[A-Z]\/?[A-Z]?-\d{2})\s*(?:\n|$)/i
+    ]);
+  }
+  if (result.manufacturer === "WEG" && !result.serialNumber) {
+    result.serialNumber = first(normalized, [/(?:^|\n)\s*(\d{8,12})\s*(?:\n|$)/]);
+  }
+  if (result.manufacturer === "WEG" && !result.year) {
+    result.year = first(normalized, [/\b\d{2}[A-Z]{3}(\d{2})\b/i]);
+  }
   if (result.manufacturer === "ABB" && !result.model) {
     result.model = first(normalized, [/(?:^|\n)\s*(ACS\d{3,4}-[A-Z0-9+._\/-]+)\s*(?:\n|$)/i]);
   }
@@ -732,12 +815,27 @@ function parseNameplate(text) {
   if (result.manufacturer === "Mitsubishi Electric" && !result.model) {
     result.model = first(normalized, [/(?:^|\n)\s*(FR-[A-Z]\d{3}-[A-Z0-9._\/-]+)\s*(?:\n|$)/i]);
   }
+  if (result.manufacturer === "Siemens") {
+    const siemensMotorModel = first(normalized, [
+      /\b(1FT\d{4}-[A-Z0-9-]+)\b/i,
+      /(?:^|\n)\s*(1FG\s+\d{4}-[A-Z0-9-]+)\s*(?:\n|$)/i
+    ]);
+    if (siemensMotorModel) result.model = siemensMotorModel;
+  }
   if (result.manufacturer === "Siemens" && !result.model) {
     result.model = first(normalized, [/(?:POWER\s+MODULE\s+)?(PM\d{3}-\d)\b/i, /(?:^|\n)\s*(6SL\d[A-Z0-9._\/-]+)\s*(?:\n|$)/i]);
   }
   if (result.manufacturer === "Allen-Bradley" && !result.model) {
-    result.model = first(normalized, [/(PowerFlex\s+\d{3})\b/i]);
+    result.model = first(normalized, [/(PowerFlex\s+\d{3}(?:TM)?)/i]);
   }
+  if (result.manufacturer === "BLOCH" && !result.model) {
+    result.model = first(normalized, [/(?:^|\n)\s*(\d{2,3}M)\s*(?:\n|$)/i]);
+  }
+  if (result.manufacturer === "BLOCH" && !result.head) {
+    result.head = first(normalized, [/\b(\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?)\s*metros\b/i]);
+    if (result.head) result.head += " m";
+  }
+
   if (result.manufacturer === "Alfa Laval" && !result.orderNumber) {
     result.orderNumber = first(normalized, [/\bOrder\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{3,30})/i]);
   }
