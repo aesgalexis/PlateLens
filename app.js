@@ -451,7 +451,7 @@ function parseNameplate(text) {
   }
 
   result.voltage = first(normalized, [
-    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*Volt\b/i,
+    /\b(\d{3,4}(?:\s*[\/-]\s*\d{3,4})?)\s*Volt\b/i,
     /(?:Input\s+(?:a\.c\.\/d\.c\.|ac\/dc|ac|a\.c\.)|INPUT\s*:)[^\n]{0,24}?((?:\d{2,4}(?:\s*[-\/]\s*\d{2,4})?))\s*V(?:ac|dc)?\b/i,
     /\bVolt\s*[~=:.-]*\s*[\[|:_-]*\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)(?=\s|\]|$)/i,
     /\bIN\s*:\s*(3x\d{2,4}\s*[-/]\s*\d{2,4})\s*V/i,
