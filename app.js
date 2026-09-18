@@ -103,6 +103,13 @@ function needsLayoutRetry(text) {
   const labelSignals = (text.match(/\b(?:type|typ|model|modello|serial|matricola|fabr\.?\s*nr|year|baujahr|weight|gewicht|voltage|volt|current|power)\b/gi) || []).length;
   return text.trim().length >= 24 && labelSignals >= 2 && valueSignals < 3;
 }
+function needsTechnicalRegionRetry(text) {
+  const parsed = parseNameplate(text);
+  const technicalKeys = ["voltage","frequency","power","current","speed","capacity","flow","head","workingPressure","airPressure","steamPressure"];
+  const technicalCount = technicalKeys.filter(key => Boolean(parsed[key])).length;
+  const hasIdentity = Boolean(parsed.model || parsed.serialNumber || parsed.manufacturer);
+  return hasIdentity && technicalCount < 3;
+}
 
 function mergeOcrTexts(...texts) {
   const seen = new Set();
@@ -136,8 +143,8 @@ analyzeBtn.addEventListener("click", async () => {
       worker = await Tesseract.createWorker("eng", 1, {
         logger: m => {
           if (typeof m.progress === "number") {
-            const base = ocrPass === 1 ? 0 : 86;
-            const span = ocrPass === 1 ? 84 : 12;
+            const base = ocrPass === 1 ? 0 : (ocrPass === 2 ? 70 : 90);
+            const span = ocrPass === 1 ? 68 : (ocrPass === 2 ? 18 : 8);
             const pct = Math.min(98, base + Math.round(m.progress * span));
             progressBar.style.width = pct + "%";
             progressText.textContent = `${friendlyStatus(m.status)} · ${pct}%`;
@@ -161,8 +168,21 @@ analyzeBtn.addEventListener("click", async () => {
         }
       }
 
-      if (needsLayoutRetry(text)) {
+      if (needsTechnicalRegionRetry(text)) {
         ocrPass = 2;
+        progressText.textContent = "Reading technical region…";
+        const technicalRegion = {
+          left: Math.round(preparedImage.width * 0.04),
+          top: Math.round(preparedImage.height * 0.20),
+          width: Math.round(preparedImage.width * 0.92),
+          height: Math.round(preparedImage.height * 0.60)
+        };
+        const regionResult = await worker.recognize(preparedImage, {rectangle: technicalRegion});
+        text = mergeOcrTexts(text, regionResult.data.text);
+      }
+
+      if (needsLayoutRetry(text)) {
+        ocrPass = 3;
         progressText.textContent = "Reading technical layout…";
         await worker.setParameters({
           tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
