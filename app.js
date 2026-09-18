@@ -400,6 +400,23 @@ analyzeBtn.addEventListener("click", async () => {
       }
 
       if (needsSparseRetry(text)) {
+        ocrPass = 3;
+        progressText.textContent = "Reading plate body…";
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+          preserve_interword_spaces: "1"
+        });
+        const plateBody = {
+          left: Math.round(orientedImage.width * 0.06),
+          top: Math.round(orientedImage.height * 0.04),
+          width: Math.round(orientedImage.width * 0.84),
+          height: Math.round(orientedImage.height * 0.78)
+        };
+        const bodyResult = await worker.recognize(orientedImage, {rectangle: plateBody});
+        text = mergeOcrTexts(text, bodyResult.data.text);
+      }
+
+      if (needsSparseRetry(text)) {
         ocrPass = 2;
         progressText.textContent = "Recovering sparse technical text…";
         await worker.setParameters({
@@ -608,6 +625,8 @@ function parseNameplate(text) {
   if (/^[\d\s]+$/.test(result.model)) result.model = result.model.replace(/\s+/g,"");
   if (/^[LI]\d{7,}$/i.test(result.model)) result.model = "1" + result.model.slice(1);
   if (/^[\d\s]+$/.test(result.serialNumber)) result.serialNumber = result.serialNumber.replace(/\s+/g,"");
+  if (result.model && result.model.replace(/[^A-Z0-9]/gi, "").length < 2) result.model = "";
+  if (result.serialNumber && !/\d/.test(result.serialNumber)) result.serialNumber = "";
   if (!result.model) result.model = first(normalized, [/\bMODEL\s*:\s*([A-Z0-9][A-Z0-9.+_\/-]+)\b/i]);
   if (!result.model) {
     result.model = first(normalized, [
@@ -805,7 +824,7 @@ function parseNameplate(text) {
     /\b(R(?:22|32|134a|290|404A|407C|410A|448A|449A|452A|454[AC]|507|513A|600a))\b/i
   ]);
   result.ratio = first(normalized, [
-    /\bi\s*[:=]\s*(\d+(?:[.,]\d+)?)/i,
+    /(?:^|\n)\s*i\s*[:=]\s*(\d+(?:[.,]\d+)?)/im,
     /\b(\d+\s*:\s*\d+)\b/
   ]);
 
@@ -1032,6 +1051,30 @@ function parseNameplate(text) {
   if (result.manufacturer === "BLOCH" && !result.head) {
     result.head = first(normalized, [/\b(\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?)\s*metros\b/i]);
     if (result.head) result.head += " m";
+  }
+
+  if (result.manufacturer === "PHARMAGG") {
+    const pharmaModel = first(normalized, [
+      /\b(FU\s*\d{3,5})\b/i,
+      /(?:^|\n)\s*Typ\s*[:=.-]?\s*(FU\s*\d{3,5})\b/im
+    ]);
+    if (pharmaModel) result.model = pharmaModel.replace(/\s+/g, "");
+
+    const pharmaSerial = first(normalized, [
+      /Fabr\.?\s*Nr\.?\s*[:=.-]?\s*(\d{8,14})\b/i,
+      /\b(\d{10,12})\b/
+    ]);
+    if (pharmaSerial) result.serialNumber = pharmaSerial;
+
+    const ratedCurrent = first(normalized, [
+      /Nennstrom\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*A\b/i
+    ]);
+    if (ratedCurrent) result.current = ratedCurrent + " A";
+    else if (result.current) result.current = "";
+
+    if (!/(?:^|\n)\s*(?:i\s*[:=]|ratio\b|[ÜU]bersetzung\b)/im.test(normalized)) {
+      result.ratio = "";
+    }
   }
 
   if (result.manufacturer === "Alfa Laval" && !result.orderNumber) {
