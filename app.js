@@ -550,15 +550,21 @@ function detectFieldPresence(text) {
     power: /\b(?:power|potencia|leistung|rated\s+power|input\s+power|total\s+W|kW|HP|CV|P2)\b/i,
     apparentPower: /\b(?:apparent\s+power|kVA)\b/i,
     current: /\b(?:current|corriente|strom|amps?|ampere|amperios|F\.\s*L\.\s*A\.?|FLA|I\s*\(\s*A\s*\))\b/i,
-    capacity: /\b(?:capacity|capacidad|capacità|trocken[\s-]*füllmenge|fullmenge|füllmenge)\b/i,\n    volume: /\b(?:volume|füllraum|fullraum|liters?|litres?|litri|Lt\b|LTR\b)\b/i,
+    capacity: /\b(?:capacity|capacidad|capacità|trocken[\s-]*füllmenge|fullmenge|füllmenge)\b/i,
+    volume: /\b(?:volume|füllraum|fullraum|liters?|litres?|litri|Lt\b|LTR\b)\b/i,
     refrigerant: /\b(?:refrigerant|refrig\.?|kältemittel|fluide\s+frigorigène)\b/i,
     ratio: /\b(?:ratio|reduction|reducci[oó]n|übersetzung|i\s*=)\b/i,
     flow: /\b(?:flow|caudal|portata|durchfluss|Q\s*[:=])\b/i,
     head: /\b(?:head|altura|prevalenza|förderhöhe|H\s*[:=])\b/i,
-    workingPressure: /\b(?:working\s+pressure|max\.?\s*pressure|pressure|presi[oó]n|pressione|betriebsdruck|druck|MAWP|pmax|PS\b)\b/i,\n    overpressure: /\b(?:overpressure|überdruck|ueberdruck|betriebsüberdruck|betriebsueberdruck)\b/i,
-    heatingPower: /\b(?:heating\s+elements?|riscaldamento|heater\s+power)\b/i,\n    heatingType: /\b(?:heating\s+type|beheizungsart|heizart|dampf|steam)\b/i,
-    airPressure: /\b(?:air\s+inlet\s+pressure|air\s+operating\s+pressure|druckluft\s+betriebsdruck|pressione\s+aliment\.?\s+aria)\b/i,\n    airSupplyPressure: /\b(?:air\s+supply\s+pressure|druckluft\s+netzanschlu(?:ss|ß))\b/i,
-    steamPressure: /\b(?:max\s+steam\s+pressure|pressione\s+max\s+vapore)\b/i,\n    operatingTemperature: /\b(?:operating\s+temperature|betriebstemperatur|temperature|temperatur)\b/i,\n    fuseRating: /\b(?:fuse|fusing|absicherung)\b/i,
+    workingPressure: /\b(?:working\s+pressure|max\.?\s*pressure|pressure|presi[oó]n|pressione|betriebsdruck|druck|MAWP|pmax|PS\b)\b/i,
+    overpressure: /\b(?:overpressure|überdruck|ueberdruck|betriebsüberdruck|betriebsueberdruck)\b/i,
+    heatingPower: /\b(?:heating\s+elements?|riscaldamento|heater\s+power)\b/i,
+    heatingType: /\b(?:heating\s+type|beheizungsart|heizart|dampf|steam)\b/i,
+    airPressure: /\b(?:air\s+inlet\s+pressure|air\s+operating\s+pressure|druckluft\s+betriebsdruck|pressione\s+aliment\.?\s+aria)\b/i,
+    airSupplyPressure: /\b(?:air\s+supply\s+pressure|druckluft\s+netzanschlu(?:ss|ß))\b/i,
+    steamPressure: /\b(?:max\s+steam\s+pressure|pressione\s+max\s+vapore)\b/i,
+    operatingTemperature: /\b(?:operating\s+temperature|betriebstemperatur|temperature|temperatur)\b/i,
+    fuseRating: /\b(?:fuse|fusing|absicherung)\b/i,
     speed: /\b(?:speed|velocidad|drehzahl|rpm|r\/min|min-?1|nmax|n1max|n2max|FLRPM)\b/i,
     ipRating: /\b(?:degree\s+of\s+protection|protection\s+degree|IP\s*(?:X\d|\d{0,2}))\b/i,
     cosPhi: /\b(?:cos\s*[φϕ]|cos\s*phi|power\s+factor|P\.\s*F\.?)\b/i,
@@ -765,7 +771,8 @@ function parseNameplate(text) {
   if (result.airSupplyPressure) result.airSupplyPressure += " bar";
 
   result.airPressure = first(normalized, [
-    /(?:Pressione\s+aliment\.\s+aria\s*\/\s*Air\s+inlet\s+pressure)[\s\S]{0,60}?\bBAR[\s:=~.\-\[|_]*(\d+(?:[.,]\d+)?)/i,\n    /Druckluft[\s-]*Betriebsdruck\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i
+    /(?:Pressione\s+aliment\.\s+aria\s*\/\s*Air\s+inlet\s+pressure)[\s\S]{0,60}?\bBAR[\s:=~.\-\[|_]*(\d+(?:[.,]\d+)?)/i,
+    /Druckluft[\s-]*Betriebsdruck\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i
   ]);
   if (result.airPressure && !/bar$/i.test(result.airPressure)) result.airPressure += " bar";
 
@@ -920,7 +927,9 @@ function parseNameplate(text) {
     ["ELGi", /\bELGI\b/i],
     ["Lowara", /\bLowara\b/i],
     ["Calpeda", /\bCalpeda\b/i],
-    ["Emerson", /\bEmerson(?:\s+Climate\s+Technologies)?\b/i],\n    ["PHARMAGG", /\bPHARMAGG\b/i],\n    ["Kannegiesser", /\bKannegiesser\b/i]
+    ["Emerson", /\bEmerson(?:\s+Climate\s+Technologies)?\b/i],
+    ["PHARMAGG", /\bPHARMAGG\b/i],
+    ["Kannegiesser", /\bKannegiesser\b/i]
   ];
   const knownBrand = knownBrands.find(entry => entry[1].test(normalized));
   result.manufacturer = knownBrand ? knownBrand[0] : first(normalized, [
