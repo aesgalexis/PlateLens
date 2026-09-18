@@ -594,7 +594,7 @@ function parseNameplate(text) {
     if (!/(?:bar|psig)$/i.test(result.workingPressure)) result.workingPressure += " " + pressureUnit;
   }
   result.speed = first(normalized, [
-    /(?:R\.\s*P\.\s*M\.?|RPM|FLRPM|F\.\s*L\.\s*RPM)\s*[:=.-]?\s*(\d{2,5}(?:\s*\/\s*\d{2,5}){0,3})\b/i,
+    /(?:^|\n)\s*(?:R\.[ \t]*P\.[ \t]*M\.?|RPM|FLRPM|F\.[ \t]*L\.[ \t]*RPM)[ \t]*[:=.-]?[ \t]*(\d{2,5}(?:[ \t]*\/[ \t]*\d{2,5}){0,3})\b/i,
     /\bINPUT\s+RPM\s*[:=.-]?\s*(\d{2,5})\b/i,
     /\bn\s*max\s*[:=.-]?\s*(\d{2,5})\s*(?:U\/min|1\/min|r\/?min|rpm)\b/i,
     /\b(\d{2,5}\s*[-–]\s*\d{2,5})[ \t]*(?:r\/?min|rpm|min-1|min⁻¹|\/min)\b/i,
