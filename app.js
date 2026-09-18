@@ -1,7 +1,7 @@
 const fields = [
-  ["manufacturer","Manufacturer"],["equipment","Equipment / description"],["model","Model / type"],["serialNumber","Serial number"],
+  ["manufacturer","Manufacturer"],["equipment","Equipment / description"],["model","Model / type"],["serialNumber","Serial number"],["partNumber","Part / product code"],
   ["date","Date"],["phases","Phases"],["voltage","Voltage"],["frequency","Frequency"],["power","Total power"],["current","Current"],
-  ["capacity","Capacity"],["heatingPower","Heating power"],["airPressure","Air inlet pressure"],["steamPressure","Max steam pressure"],
+  ["capacity","Capacity"],["ratio","Ratio"],["flow","Flow"],["head","Head"],["workingPressure","Working pressure"],["heatingPower","Heating power"],["airPressure","Air inlet pressure"],["steamPressure","Max steam pressure"],
   ["speed","Speed"],["ipRating","IP rating"],["year","Year"],["cosPhi","Power factor / cos φ"],["weight","Weight"]
 ];
 
@@ -125,6 +125,37 @@ function first(text, patterns) {
   }
   return "";
 }
+function uniqueValues(values) {
+  const out = [];
+  for (const value of values.map(clean).filter(Boolean)) {
+    if (!out.some(existing => existing.toLowerCase() === value.toLowerCase())) out.push(value);
+  }
+  return out;
+}
+function joinRatings(values, unit) {
+  const cleaned = uniqueValues(values.map(value => clean(value).replace(new RegExp("\\s*" + unit + "$", "i"), "")));
+  return cleaned.length ? cleaned.join(" / ") + " " + unit : "";
+}
+function parseMotorTable(lines) {
+  const index = lines.findIndex(line => /\\bV\\b/i.test(line) && /\\bHz\\b/i.test(line) && /\\bkW\\b/i.test(line) && /(?:r\\/min|min-?1|rpm)/i.test(line) && /\\bA\\b/.test(line));
+  if (index < 0) return {};
+  const rows = [];
+  const hasCos = /cos/i.test(lines[index]);
+  for (const line of lines.slice(index + 1, index + 10)) {
+    const m = line.replace(/[Δ∆]/g, "D").match(/^(\\d{3,4}\\s*[YD]?)\\s+(50|60)\\s+(\\d+(?:[.,]\\d+)?)\\s+(\\d{3,5})\\s+(\\d+(?:[.,]\\d+)?)(?:\\s+(0[.,]\\d+))?/i);
+    if (!m) { if (rows.length) break; else continue; }
+    rows.push({voltage:m[1], frequency:m[2], power:m[3], speed:m[4], current:m[5], cosPhi:hasCos ? (m[6] || "") : ""});
+  }
+  if (!rows.length) return {};
+  return {
+    voltage: joinRatings(rows.map(row => row.voltage), "V"),
+    frequency: joinRatings(rows.map(row => row.frequency), "Hz"),
+    power: joinRatings(rows.map(row => row.power), "kW"),
+    speed: joinRatings(rows.map(row => row.speed), "rpm"),
+    current: joinRatings(rows.map(row => row.current), "A"),
+    cosPhi: uniqueValues(rows.map(row => row.cosPhi).filter(Boolean)).join(" / ")
+  };
+}
 function parseNameplate(text) {
   const normalized = text
     .replace(/[–—]/g,"-")
@@ -136,14 +167,23 @@ function parseNameplate(text) {
   // Prefer values explicitly attached to labels. Industrial plates often place
   // another label/value pair on the same OCR line, so each capture is bounded.
   result.model = first(normalized, [
-    /(?:^|\n)\s*(?:modello\s*\/\s*model|model|type|typ|mod\.?|modelo)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]*(?:\s+[A-Z0-9._\/-]+){0,2}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht)\b))/im
+    /(?:^|\n)\s*(?:modello\s*\/\s*model|model|type|typ|mod\.?|modelo|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N)\b))/im
   ]);
   result.serialNumber = first(normalized, [
     /(?:matricola\s*\/\s*serial\s*number|serial(?:\s*(?:no|number|nr))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
   ]);
+  result.partNumber = first(normalized, [
+    /(?:part\s*(?:no|number)|p\/n|product\s*(?:no|number)|code|cat\.?\s*no)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
+  ]);
 
   if (/^[\d\s]+$/.test(result.model)) result.model = result.model.replace(/\s+/g,"");
   if (/^[\d\s]+$/.test(result.serialNumber)) result.serialNumber = result.serialNumber.replace(/\s+/g,"");
+  if (!result.model) {
+    result.model = first(normalized, [
+      /3\s*[~\-]\s*(?:motor|mot)\s+([A-Z0-9][A-Z0-9.+_\/-]{3,30})/i,
+      /3\s*~\s+([A-Z][A-Z0-9.+_\/-]{3,30})/i
+    ]);
+  }
 
   result.date = first(normalized, [
     /\bDate\s*[:#.-]?\s*[\[|:_-]*\s*((?:0?[1-9]|1[0-2])\s*[\/.-]\s*\d{2,4})/i
@@ -175,13 +215,19 @@ function parseNameplate(text) {
     /\b(\d+(?:[.,]\d+)?)\s*A\b/i
   ]);
   if (result.current && !/A$/i.test(result.current)) result.current += " A";
+  if (!result.current) {
+    const fla = normalized.match(/(?:Package|Motor|Drive\s+Motor)\s+FLA\s+([\d|/.,\s]+)/i);
+    if (fla && fla[1]) result.current = clean(fla[1]).replace(/[|]+/g, " / ") + " A";
+  }
 
   result.voltage = first(normalized, [
-    /\bVolt\s*[~=:.-]?\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)(?=\s|$)/i,
+    /\bVolt\s*[~=:.-]?\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)(?=\s|$)/i,\n    /\bIN\s*:\s*(3x\d{2,4}\s*[-/]\s*\d{2,4})\s*V/i,
     /(?:voltage|volt|tension|spannung)\s*[:=~-]?\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V?\b/i,
     /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V\b/i
   ]);
   if (result.voltage && !/V$/i.test(result.voltage)) result.voltage += " V";
+  const multiVoltages = uniqueValues([...normalized.matchAll(/\b(\d{3,4}Y?\s*\/\s*\d{3,4})\s*V\b/gi)].map(match => match[1]));
+  if (multiVoltages.length > 1) result.voltage = joinRatings(multiVoltages, "V");
 
   result.capacity = first(normalized, [
     /\bLt\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
@@ -205,7 +251,7 @@ function parseNameplate(text) {
   if (result.steamPressure && !/bar$/i.test(result.steamPressure)) result.steamPressure += " bar";
 
   result.year = first(normalized, [
-    /(?:baujahr\s*\/\s*year|baujahr|year|yr|año|built|date)\s*[:#.-]?\s*((?:19|20)\d{2})/i
+    /(?:year\s+of\s+manufacture|baujahr\s*\/\s*year|baujahr|year|yr|año|built)\s*[:#.-]?\s*\'?((?:19|20)?\d{2})/i
   ]);
 
   result.weight = first(normalized, [
@@ -214,6 +260,33 @@ function parseNameplate(text) {
   ]);
   if (result.weight && !/kg$/i.test(result.weight)) result.weight += " kg";
 
+  result.ratio = first(normalized, [
+    /\bi\s*[:=]\s*(\d+(?:[.,]\d+)?)/i,
+    /\b(\d+\s*:\s*\d+)\b/
+  ]);
+
+  result.flow = first(normalized, [
+    /\bQ\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*(?:m[³3]\/h|l\/s|l\/min)\b/i
+  ]);
+  if (result.flow) {
+    const flowUnit = normalized.match(/\bQ\s*[:=.-]?\s*\d+(?:[.,]\d+)?\s*(m[³3]\/h|l\/s|l\/min)\b/i);
+    if (flowUnit && flowUnit[1]) result.flow += " " + flowUnit[1];
+  }
+
+  result.head = first(normalized, [
+    /\bH\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*m?\b/i
+  ]);
+  if (result.head && !/m$/i.test(result.head)) result.head += " m";
+
+  result.workingPressure = first(normalized, [
+    /(?:max\.?\s*working\s*pressure|working\s*pressure|max\.?\s*pressure)\s*(?:bar(?:\(e\))?|psig)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
+    /\bpsig\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
+    /\bp\/t\s+(\d+(?:[.,]\d+)?)\s*\/\s*\d+(?:[.,]\d+)?\s*bar/i
+  ]);
+  if (result.workingPressure) {
+    const pressureUnit = /psig/i.test(normalized) ? "psig" : "bar";
+    if (!/(?:bar|psig)$/i.test(result.workingPressure)) result.workingPressure += " " + pressureUnit;
+  }
   result.speed = first(normalized, [
     /((?:\d{2,5})\s*(?:r\/?min|rpm|min-1|min⁻¹)\b)/i
   ]);
@@ -223,10 +296,24 @@ function parseNameplate(text) {
   ]);
 
   // Company lines are a stronger manufacturer signal than arbitrary first text.
-  result.manufacturer = first(normalized, [
+  const knownBrands = [
+    ["SEW-EURODRIVE", /\bSEW[\s-]*EURODRIVE\b/i],
+    ["Atlas Copco", /\bAtlas\s*Copco\b/i],
+    ["Danfoss", /\bDanfoss\b/i],
+    ["Electrolux", /\bElectrolux\b/i],
+    ["Bonfiglioli", /\bBonfiglioli\b/i],
+    ["Grundfos", /\bGrundfos\b/i],
+    ["Siemens", /\bSiemens\b/i],
+    ["KAESER", /\bKaeser\b/i],
+    ["ABB", /\bABB(?:\s+Motors?)?\b/i],
+    ["WEG", /\bWEG\b/i],
+    ["VEIT", /\bVEIT\b/i],
+    ["Barbanti", /\bBarbanti\b/i]
+  ];
+  const knownBrand = knownBrands.find(entry => entry[1].test(normalized));
+  result.manufacturer = knownBrand ? knownBrand[0] : first(normalized, [
     /\b([A-Z][A-Za-z0-9&. -]{1,35}?(?:GmbH(?:\s*&\s*Co\.?)?|AG|Ltd\.?|S\.?A\.?|S\.?r\.?l\.?|Inc\.?|Corp\.?))(?=,|\n|$)/i
   ]);
-  if (/\bveit\b/i.test(normalized)) result.manufacturer = "VEIT";
 
   // Description normally sits above the technical key/value rows.
   const technicalStart = lines.findIndex(line =>
@@ -247,6 +334,11 @@ function parseNameplate(text) {
 
   if (!result.year) {
     result.year = first(normalized, [/\b((?:19|20)\d{2})\b/]);
+  }
+
+  const motorTable = parseMotorTable(lines);
+  for (const [key, value] of Object.entries(motorTable)) {
+    if (value && !result[key]) result[key] = value;
   }
 
   return result;
