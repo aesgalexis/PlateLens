@@ -555,6 +555,162 @@ const fixtures = [
       power: '4 kW',
       ipRating: 'IP20'
     }
+  },
+  {
+    name: 'WEG W20 General Purpose motor',
+    text: 'WEG W20 General Purpose\nW3EA1324B3T003\n3~ 132S-4 DUTY S1 IP55 DES N IEC 60034-1\n55.7KG 1000m.a.s.l. INS cl. F DT 80K AMB 40°C SF 1.00\nV Hz kW RPM A PF IE\n400Y 50 5.5 1470 11.4 0.78 IE3\n690D 50 5.5 1470 6.6 0.78 IE3\nMP05988379 01012025',
+    expected: {
+      manufacturer: 'WEG',
+      model: 'W3EA1324B3T003',
+      voltage: '400Y / 690D V',
+      frequency: '50 Hz',
+      power: '5.5 kW',
+      current: '11.4 / 6.6 A',
+      speed: '1470 rpm',
+      weight: '55.7 kg',
+      ipRating: 'IP55'
+    }
+  },
+  {
+    name: 'WEG W51 HD motor',
+    text: 'WEG\nW51 HD\n01MAR22\n0000000000\n355H/G-04\nDUTY S1 INS CL F AMB 40°C IP55\n321kg\nV Hz kW RPM A PF\n400D 50 250 1492 560 0.82',
+    expected: {
+      manufacturer: 'WEG',
+      model: '355H/G-04',
+      serialNumber: '0000000000',
+      year: '22',
+      voltage: '400D V',
+      frequency: '50 Hz',
+      power: '250 kW',
+      current: '560 A',
+      speed: '1492 rpm',
+      weight: '321 kg',
+      ipRating: 'IP55'
+    }
+  },
+  {
+    name: 'ABB M3BP 160MLA motor',
+    text: 'ABB Oy\nIEC LV Motors\n3~ Motor\nM3BP 160MLA 4 IMB3/IM1001\nyear 2023\nNo. 3G1F2309109029\nIns. cl. F IP 55\nV Hz kW r/min A cos φ Duty\n690 Y 50 11 1477 12.2 0.82 S1\n400 D 50 11 1477 21.1 0.82 S1\n460 D 60 11 1780 18.9 0.80 S1\n3GBP162410-ADK +VC\n188 kg',
+    expected: {
+      manufacturer: 'ABB',
+      model: 'M3BP 160MLA 4',
+      serialNumber: '3G1F2309109029',
+      year: '2023',
+      voltage: '690 Y / 400 D / 460 D V',
+      frequency: '50 / 60 Hz',
+      power: '11 kW',
+      current: '12.2 / 21.1 / 18.9 A',
+      speed: '1477 / 1780 rpm',
+      weight: '188 kg',
+      ipRating: 'IP 55'
+    }
+  },
+  {
+    name: 'ABB M3BP 280SMA motor',
+    text: 'ABB Oy\nIEC LV Motors\n3~ Motor M3BP 280SMA 4 IMB3/IM1001\nyear 2023 No. 3GIF2309911730\nIns. cl. F IP 55\nV Hz kW r/min A cos φ Duty\n690 Y 50 75 1484 78 0.85 S1\n400 D 50 75 1484 134 0.85 S1\n415 D 50 75 1485 131 0.84 S1\nProduct code 3GBP282210-ADG +VC\nNmax 2600 r/min\n635 kg',
+    expected: {
+      manufacturer: 'ABB',
+      model: 'M3BP 280SMA 4',
+      serialNumber: '3GIF2309911730',
+      partNumber: '3GBP282210-ADG',
+      year: '2023',
+      power: '75 kW',
+      speed: '1484 / 1485 rpm',
+      weight: '635 kg',
+      ipRating: 'IP 55'
+    }
+  },
+  {
+    name: 'Schneider Altivar ATV630 nameplate',
+    text: 'Schneider Electric\nAltivar 630\nATV630U40N4\n4kW - 5HP\nV1.0 IE00\nInput 3 phases 380...480 V 50/60 Hz\nOutput 3 phases 0...480 V\nIP21\nS/N 4009008A213682012',
+    expected: {
+      manufacturer: 'Schneider Electric',
+      model: 'ATV630U40N4',
+      serialNumber: '4009008A213682012',
+      voltage: '380...480 V',
+      frequency: '50/60 Hz',
+      power: '4 kW',
+      ipRating: 'IP21'
+    }
+  },
+  {
+    name: 'Mitsubishi FR-E800 nameplate',
+    text: 'MITSUBISHI ELECTRIC\nINVERTER\nMODEL: FR-E820-0008EPA\nINPUT: 3PH 200-240V 50/60Hz\nOUTPUT: 3PH 0-240V 0.2-590Hz\nSERIAL: A24X123456\nMADE IN JAPAN',
+    expected: {
+      manufacturer: 'Mitsubishi Electric',
+      model: 'FR-E820-0008EPA',
+      serialNumber: 'A24X123456',
+      voltage: '200-240 V',
+      frequency: '50/60 Hz',
+      phases: '3'
+    }
+  },
+  {
+    name: 'Allen-Bradley PowerFlex 755TM nameplate',
+    text: 'Allen-Bradley\nPowerFlex 755TM\nCat No: 20JEH3D740LNANNNNN-C1-P18 Series A\nInput: 3-Phase 60Hz AC Voltage 480 Amps LD/ND/HD 100/90/80\nOutput: 3-Phase 47-63Hz AC Voltage Range 0-460\nPower LD/ND/HD 75/60/50 kW\nControl Power: 240V AC 50/60 Hz 3.34 A 0.8kVA\nDATE 2019/03/20\nSerial Number: 1234567890',
+    expected: {
+      manufacturer: 'Allen-Bradley',
+      model: 'PowerFlex 755TM',
+      partNumber: '20JEH3D740LNANNNNN-C1-P18',
+      serialNumber: '1234567890',
+      date: '2019/03/20',
+      phases: '3',
+      voltage: '480 V',
+      frequency: '60 Hz',
+      power: '75/60/50 kW',
+      current: '100/90/80 A'
+    }
+  },
+  {
+    name: 'Siemens 1FT7 motor',
+    text: 'SIEMENS\n3 ~ Mot. 1FT7105-5AF71-1CH1-Z\nNo.YF: F9621 1798 01 001\nMo 50 Nm Io 26 A nmax 3500 /min\nMN 28,0 Nm IN 15,0 A nN 3000 /min\nTh.Cl. 155(F) UIN 375 V\nBrake 24 VDC 36.5W 85 Nm\nIP 65',
+    expected: {
+      manufacturer: 'Siemens',
+      model: '1FT7105-5AF71-1CH1-Z',
+      current: '26 A',
+      voltage: '375 V',
+      speed: '3500 rpm',
+      ipRating: 'IP 65'
+    }
+  },
+  {
+    name: 'Siemens 1FG geared motor',
+    text: 'SIEMENS\n1FG 1508-1UG53-2FE1-Z\nYF J4635 6012 01 001\nSIMOTICS 1P\n3 ~ Mot S\nK79\ni = 10,51 [1209/115]\nM2max 445 Nm\nn2max 428 /min\nI0,M 29,0 A\nn1max 4500 /min\nIP 65\nmges 86 kg\nBRAKE 24VDC 38W 19Nm',
+    expected: {
+      manufacturer: 'Siemens',
+      model: '1FG 1508-1UG53-2FE1-Z',
+      ratio: '10,51',
+      current: '29,0 A',
+      speed: '4500 rpm',
+      ipRating: 'IP 65',
+      weight: '86 kg'
+    }
+  },
+  {
+    name: 'Danfoss FC302 enclosed drive',
+    text: 'VLT AutomationDrive\nwww.danfoss.com\nT/C: PLV302T7I710C1XMXXXXXXAXL21XXXXXXXX2 XXXX\nSN: 123456H128\nMains voltage 525-690 V\nModel N160\nBuild date 232\nDanfoss A/S',
+    expected: {
+      manufacturer: 'Danfoss',
+      model: 'PLV302T7I710C1XMXXXXXXAXL21XXXXXXXX2',
+      serialNumber: '123456H128',
+      voltage: '525-690 V'
+    }
+  },
+  {
+    name: 'BLOCH damaged real OCR',
+    text: 'se dE\nC€\nfay\n35/5 metros\nscas —1”X1"\nonofasico\n2850 om\n0.40 CV\n0.30 Kw\nIP 54\nndensador-8mF/450V\nAis. CL - E\nwww.bombashbloch.com\nMassaifassar - Valencia - (Spain)\nwww.bombasbloch.com\n40M\n35/5 m tros\n50 Hz\nMonofasico\n2850 rpm\n2 ampe\nCondensador-8mF/450V\nAisl. CL - E',
+    expected: {
+      manufacturer: 'BLOCH',
+      model: '40M',
+      phases: '1',
+      frequency: '50 Hz',
+      power: '0.30 kW',
+      current: '2 A',
+      speed: '2850 rpm',
+      ipRating: 'IP 54',
+      head: '35/5 m'
+    },
+    absent: ['voltage']
   }
 ];
 
@@ -565,6 +721,13 @@ for (const fixture of fixtures) {
     assert.ok(
       actual.toLowerCase().includes(expected.toLowerCase()),
       fixture.name + ': expected ' + key + ' to include "' + expected + '", got "' + actual + '"'
+    );
+  }
+  for (const key of fixture.absent || []) {
+    assert.equal(
+      result[key] || '',
+      '',
+      fixture.name + ': expected ' + key + ' to remain empty, got "' + (result[key] || '') + '"'
     );
   }
 }
