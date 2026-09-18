@@ -566,7 +566,7 @@ function parseNameplate(text) {
     /(?:^|\n)\s*(?:n[°º]?\s*de\s*modele|modell|modello|modelo|model(?:\s*(?:no|number))?|type|tipo|typ|mod\.?|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:REV|INPUT|OUTPUT|Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N|Part\s*(?:No|Number)|Product\s*(?:No|Number))\b))/im
   ]);
   result.serialNumber = first(normalized, [
-    /(?:matricola\s*\/\s*serial\s*number|n[°º]?\s*de\s*serie|works\s*n[°º]?|serial(?:\s*(?:no|number|nr|n[°º.]?))?|(?:^|\n)\s*No\.?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.=\-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|kW|KW|A|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
+    /(?:matricola\s*\/\s*serial\s*number|n[°º]?\s*de\s*serie|works\s*n[°º]?|serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\.?\s*nr\.?|(?:^|\n)\s*No\.?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.=\-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|kW|KW|A|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
   ]);
   result.partNumber = first(normalized, [
     /(?:part\s*(?:no|number)|p\/n|p(?:\/|-|\.)?\s*no\.?|product\s*(?:no|number)|article\s*no\.?|cod\.?|code|cat\.?\s*no(?:\.\/part\s*no\.?)?)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
@@ -743,10 +743,11 @@ function parseNameplate(text) {
   ]);
 
   result.flow = first(normalized, [
+    /\b(?:PUMP\s+CAP(?:ACITY)?|CAP(?:ACITY)?)\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*(?:GPM|m[³3]\/h|l\/min)\b/i,
     /\bQ\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?)\s*(?:m[³3]\/h|l\/s|l\/min|lts?\/hora|litros?\/hora)\b/i
   ]);
   if (result.flow) {
-    const flowUnit = normalized.match(/\bQ\s*[:=.-]?\s*\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?\s*(m[³3]\/h|l\/s|l\/min|lts?\/hora|litros?\/hora)\b/i);
+    const flowUnit = normalized.match(/(?:\bQ\s*[:=.-]?|\b(?:PUMP\s+CAP(?:ACITY)?|CAP(?:ACITY)?)\s*[:=.-]?)\s*\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?\s*(m[³3]\/h|l\/s|l\/min|lts?\/hora|litros?\/hora|GPM)\b/i);
     if (flowUnit && flowUnit[1]) result.flow += " " + flowUnit[1];
   }
 
@@ -757,6 +758,8 @@ function parseNameplate(text) {
   if (result.head && !/m$/i.test(result.head)) result.head += " m";
 
   result.workingPressure = first(normalized, [
+    /\bRATED\s+OPERATING\s+PRESSURE\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*PSIG\b/i,
+    /\bMAX\.?\s*(?:SERVICE\s+)?PRESS(?:URE)?\.?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*(PSI|PSIG|bar)\b/i,
     /\bMAWP\s*(\d+(?:[.,]\d+)?)\s*PSI\b/i,
     /\bPRESSURE\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*PSI\b/i,
     /\bAIR\s+WORKING\s+PRESS\.?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*psig\b/i,
@@ -826,7 +829,34 @@ function parseNameplate(text) {
     ["Marathon", /\bMARATHON(?:\s+ELECTRIC)?\b/i],
     ["Toshiba", /\bTOSHIBA\b/i],
     ["Mitsubishi Electric", /\bMITSUBISHI\s+ELECTRIC\b/i],
-    ["Allen-Bradley", /\bAllen[\s-]*Bradley\b/i]
+    ["Allen-Bradley", /\bAllen[\s-]*Bradley\b/i],
+    ["Primus", /\bPrimus\b/i],
+    ["Pedrollo", /\bPedrollo\b/i],
+    ["Flygt", /\bFlygt\b/i],
+    ["Wilo", /\bWilo\b/i],
+    ["Goulds", /\bGoulds(?:\s+Pumps?)?\b/i],
+    ["CompAir", /\bCompAir\b/i],
+    ["Bitzer", /\bBitzer\b/i],
+    ["Carrier", /\bCarrier\b/i],
+    ["Daikin", /\bDaikin\b/i],
+    ["York", /\bYork\b/i],
+    ["Motovario", /\bMotovario\b/i],
+    ["Lenze", /\bLenze\b/i],
+    ["NORD", /\b(?:NORD|Nord\s+Drive\s+Systems)\b/i],
+    ["Bauer", /\bBauer\b/i],
+    ["TECO-Westinghouse", /\b(?:TECO[\s-]*Westinghouse|TECO)\b/i],
+    ["Flowserve", /\bFlowserve\b/i],
+    ["Bell & Gossett", /\bBell\s*&\s*Gossett\b/i],
+    ["Gardner Denver", /\bGardner\s+Denver\b/i],
+    ["BOGE", /\bBOGE\b/i],
+    ["Waukesha", /\bWaukesha(?:\s+Cherry[\s-]*Burrell)?\b/i],
+    ["Becker", /\bBecker\b/i],
+    ["Armstrong", /\bArmstrong\b/i],
+    ["Quincy", /\bQuincy\b/i],
+    ["ELGi", /\bELGI\b/i],
+    ["Lowara", /\bLowara\b/i],
+    ["Calpeda", /\bCalpeda\b/i],
+    ["Emerson", /\bEmerson(?:\s+Climate\s+Technologies)?\b/i]
   ];
   const knownBrand = knownBrands.find(entry => entry[1].test(normalized));
   result.manufacturer = knownBrand ? knownBrand[0] : first(normalized, [
