@@ -418,6 +418,143 @@ const fixtures = [
       power: '19.3 kW',
       speed: '1765 rpm'
     }
+  },
+  {
+    name: 'Baldor-Reliance Severe Duty XT motor',
+    text: 'BALDOR RELIANCE\nSEVERE DUTY XT\nCAT. NO. XT3156T\nSPEC. 10-0001432\nFRAME 284T\nVOLTS 230/460\nF.L. AMPS 38.8/19.4\nR.P.M. 1180\nHZ 60\nSER. F. 1.15\nNEMA NOM. EFF. 91.7\nH.P. 15\nP.F. 77%\nCLASS F\nENCL TEFC',
+    expected: {
+      manufacturer: 'Baldor-Reliance',
+      partNumber: 'XT3156T',
+      voltage: '230/460 V',
+      current: '38.8/19.4 A',
+      speed: '1180 rpm',
+      frequency: '60 Hz'
+    }
+  },
+  {
+    name: 'Leeson C145 motor',
+    text: 'LEESON\nCAT. NO./PART NO. 120086.00\nMODEL C145T34FB2C\nV. 208-230\nV. 460\nR.P.M. 3450/2850\nH.P. 1 1/2\nF.L.A. 4.2/4.8\nF.L.A. 2.1/2.4\nHZ 60/50\nFR. F45\nP.F. 86\nEFF. 80\nTYPE TF\nSER. FACT. 1.15\nDUTY CONT.\nMAX. AMB. 40 C\nINSUL. CLASS B2\nPH. 3',
+    expected: {
+      manufacturer: 'Leeson',
+      model: 'C145T34FB2C',
+      partNumber: '120086.00',
+      frequency: '60/50 Hz',
+      phases: '3',
+      speed: '3450/2850 rpm'
+    }
+  },
+  {
+    name: 'Brook Crompton Series 30 motor',
+    text: 'BROOK CROMPTON HUDDERSFIELD UK\n3~ AC MOTOR IEC 60034\nSeries 30\nTYPE JP-DH18BLH\nP/No 168249283\nNo 162688093545\nYR 21\nV Hz kW r/min A cosφ\nΔ 230 50 2.2 1445 8.70 0.73\nY 400 50 2.2 1445 5.00 0.73\nY 460 60 2.2 1725 4.20 0.73\nIP 55\n22 kg',
+    expected: {
+      manufacturer: 'Brook Crompton',
+      model: 'JP-DH18BLH',
+      partNumber: '168249283',
+      voltage: '230 / 400 / 460 V',
+      frequency: '50 / 60 Hz',
+      power: '2.2 kW',
+      current: '8.70 / 5.00 / 4.20 A',
+      speed: '1445 / 1725 rpm',
+      ipRating: 'IP 55',
+      weight: '22 kg'
+    }
+  },
+  {
+    name: 'Marathon R508A motor',
+    text: 'MARATHON ELECTRIC\nMODEL R508A\nFRAME 315S\nPH 3\nHP 100 / 75\nKW 75.0 / 55.0\nVOLTS 230/460 / 200/400\nHZ 60 / 50\nRPM 1190 / 995\nAMPS 246/123 / 220/110\nSF 1.15\nIP55\nPF 81\nDUTY CONTINUOUS\nINS CLASS F',
+    expected: {
+      manufacturer: 'Marathon',
+      model: 'R508A',
+      phases: '3',
+      voltage: '230/460 / 200/400 V',
+      frequency: '60 / 50 Hz',
+      power: '75.0 / 55.0 kW',
+      current: '246/123 / 220/110 A',
+      speed: '1190 / 995 rpm',
+      ipRating: 'IP55'
+    }
+  },
+  {
+    name: 'Toshiba EQP Global 840 motor',
+    text: 'TOSHIBA\nEQP GLOBAL 840\nMODEL 0104XSSB41A-P\nHP 10\nkW 7.5\nFRAME 215T\nVOLTS 460\nFLAMPS 13\nFREQUENCY 60 Hz\nPHASE 3\nFLRPM 1760\nIP55\nINSUL CLASS F\nDUTY CONT\nNOM. EFF. 91.7\nPF 80.2',
+    expected: {
+      manufacturer: 'Toshiba',
+      model: '0104XSSB41A-P',
+      voltage: '460 V',
+      current: '13 A',
+      frequency: '60 Hz',
+      phases: '3',
+      power: '7.5 kW',
+      speed: '1760 rpm',
+      ipRating: 'IP55'
+    }
+  },
+  {
+    name: 'ABB ACS580 drive',
+    text: 'ABB\nACS580-01-087A-4\nFRAME R5\nIP21 UL type 1\nInput U1 3~ 400/480 V AC I1 87/77 A f1 50/60 Hz\nOutput U2 3~ 0...U1 I2 87/77 A f2 0...500 Hz\nS/N: 1141104909\nMADE IN FINLAND',
+    expected: {
+      manufacturer: 'ABB',
+      model: 'ACS580-01-087A-4',
+      serialNumber: '1141104909',
+      voltage: '400/480 V',
+      current: '87/77 A',
+      frequency: '50/60 Hz',
+      ipRating: 'IP21'
+    }
+  },
+  {
+    name: 'Schneider Altivar ATV320 drive',
+    text: 'Schneider Electric\nAltivar 320\nATV320U04N4C\n0.37kW - 1/2Hp\nU(V) 380-500\nF(Hz) 50/60\nI(A) 1.5\nIP20\nS/N 8B2048101001\nMade in Indonesia',
+    expected: {
+      manufacturer: 'Schneider Electric',
+      model: 'ATV320U04N4C',
+      serialNumber: '8B2048101001',
+      voltage: '380-500 V',
+      frequency: '50/60 Hz',
+      power: '0.37 kW',
+      current: '1.5 A',
+      ipRating: 'IP20'
+    }
+  },
+  {
+    name: 'Mitsubishi FR-A800 drive',
+    text: 'MITSUBISHI ELECTRIC\nINVERTER\nMODEL: FR-A820-00046-1-N6\nINPUT: 3PH 200-240V 50/60Hz\nOUTPUT: 3PH 0-240V 0.2-590Hz 4.6A\nSERIAL: A26X123456\nDATE: 2026-06\nMADE IN JAPAN',
+    expected: {
+      manufacturer: 'Mitsubishi Electric',
+      model: 'FR-A820-00046-1-N6',
+      serialNumber: 'A26X123456',
+      voltage: '200-240 V',
+      frequency: '50/60 Hz',
+      current: '4.6 A',
+      date: '2026-06'
+    }
+  },
+  {
+    name: 'Siemens SINAMICS G120 PM240-2 drive',
+    text: 'SIEMENS\nSINAMICS G120\nPOWER MODULE PM240-2\nArticle No. 6SL3210-1PE24-5UL0\n3AC380-480V +10/-20% 47-63Hz\nOUTPUT HIGH OVERLOAD 18.5kW\nOUTPUT LOW OVERLOAD 22kW\nFSD\nIP20',
+    expected: {
+      manufacturer: 'Siemens',
+      model: 'PM240-2',
+      partNumber: '6SL3210-1PE24-5UL0',
+      voltage: '380-480 V',
+      frequency: '47-63 Hz',
+      power: '18.5 kW',
+      ipRating: 'IP20'
+    }
+  },
+  {
+    name: 'Allen-Bradley PowerFlex 525 drive',
+    text: 'Allen-Bradley\nPowerFlex 525\nCat. No. 25B-D010N104\n380...480V AC\n3 Phase\n10.5 Amps\n5 Hp\n4 kW\nFrame B\nIP20 NEMA / Open Type\nSERIES A',
+    expected: {
+      manufacturer: 'Allen-Bradley',
+      model: 'PowerFlex 525',
+      partNumber: '25B-D010N104',
+      voltage: '380...480 V',
+      phases: '3',
+      current: '10.5 A',
+      power: '4 kW',
+      ipRating: 'IP20'
+    }
   }
 ];
 
