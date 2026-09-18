@@ -602,9 +602,8 @@ function parseNameplate(text) {
   ]);
   if (result.voltage && !/V$/i.test(result.voltage)) result.voltage += " V";
   if (result.voltage) {
-    const voltageValue = result.voltage.replace(/\s*V$/i, "").replace(/\s+/g, "");
-    const escapedVoltage = voltageValue.replace(/[.*+?^$(){}|\[\]\\]/g, "\\  if (result.voltage && !/V$/i.test(result.voltage)) result.voltage += " V";");
-    const matchingLines = lines.filter(line => new RegExp("\\b" + escapedVoltage + "\\s*V\\b", "i").test(line.replace(/\s+/g, "")));
+    const voltageValue = result.voltage.replace(/\s*V$/i, "").replace(/\s+/g, "").toLowerCase();
+    const matchingLines = lines.filter(line => line.replace(/\s+/g, "").toLowerCase().includes(voltageValue + "v"));
     const capacitorOnlyVoltage = matchingLines.length > 0 && matchingLines.every(line => /condensador|capacitor|condenser/i.test(line));
     if (capacitorOnlyVoltage) result.voltage = "";
   }
