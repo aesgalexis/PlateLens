@@ -36,3 +36,8 @@ h3{font-size:20px;letter-spacing:-.025em}.lede{font-size:20px;color:var(--muted)
 footer{max-width:var(--max);margin:auto;padding:34px 28px 50px;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:var(--muted);font-size:12px}
 @media(max-width:800px){.privacy-pill{display:none}.hero{grid-template-columns:1fr;min-height:auto;padding:65px 0}.sample-card{transform:none}.workspace-grid,.results-grid,.principles-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field--wide{grid-column:auto}.capture-actions{align-items:flex-start;flex-direction:column}.section-heading{align-items:flex-start}.drop-zone{min-height:300px}footer{flex-direction:column;gap:8px}}
 @media(max-width:480px){main,.site-header,footer{padding-left:18px;padding-right:18px}.header-actions{gap:10px}h1{font-size:46px}.hero{gap:32px}}
+
+.field-note{min-height:16px;font-size:11px;color:var(--muted);letter-spacing:.02em}
+.field--unreadable input{border-style:dashed}
+.field--unreadable .field-note{color:#d9b85b}
+.field--empty .field-note{opacity:.72}
