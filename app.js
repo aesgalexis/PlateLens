@@ -1,7 +1,7 @@
 const fields = [
   ["manufacturer","Manufacturer"],["equipment","Equipment / description"],["model","Model / type"],["serialNumber","Serial number"],["partNumber","Part / product code"],["orderNumber","Order / work order"],
   ["date","Date"],["phases","Phases"],["voltage","Voltage"],["frequency","Frequency"],["power","Total power"],["apparentPower","Apparent power"],["current","Current"],
-  ["capacity","Capacity"],["refrigerant","Refrigerant / medium"],["ratio","Ratio"],["flow","Flow"],["head","Head"],["workingPressure","Working pressure"],["heatingPower","Heating power"],["airPressure","Air inlet pressure"],["steamPressure","Max steam pressure"],
+  ["capacity","Capacity / load"],["volume","Volume"],["refrigerant","Refrigerant / medium"],["ratio","Ratio"],["flow","Flow"],["head","Head"],["workingPressure","Working pressure"],["overpressure","Max / overpressure"],["heatingPower","Heating power"],["heatingType","Heating type"],["airPressure","Air operating pressure"],["airSupplyPressure","Air supply pressure"],["steamPressure","Max steam pressure"],["operatingTemperature","Operating temperature"],["fuseRating","Fuse rating"],
   ["speed","Speed"],["ipRating","IP rating"],["year","Year"],["cosPhi","Power factor / cos φ"],["weight","Weight"]
 ];
 
@@ -337,7 +337,7 @@ analyzeBtn.addEventListener("click", async () => {
     let orientationProbe = 0;
     let worker = null;
     try {
-      worker = await Tesseract.createWorker("eng", 1, {
+      worker = await Tesseract.createWorker(["eng","deu","ita","spa"], 1, {
         logger: m => {
           if (typeof m.progress === "number") {
             let base;
@@ -381,6 +381,23 @@ analyzeBtn.addEventListener("click", async () => {
       // The low-resolution SPARSE_TEXT orientation probe often recovers labels
       // that AUTO misses on reflective or grid-lined metal plates. Keep it.
       let text = mergeOcrTexts(orientation.text, result.data.text);
+
+      if (needsSparseRetry(text)) {
+        ocrPass = 2;
+        progressText.textContent = "Reading plate frame…";
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SINGLE_COLUMN,
+          preserve_interword_spaces: "1"
+        });
+        const plateFrame = {
+          left: Math.round(orientedImage.width * 0.05),
+          top: Math.round(orientedImage.height * 0.05),
+          width: Math.round(orientedImage.width * 0.90),
+          height: Math.round(orientedImage.height * 0.90)
+        };
+        const frameResult = await worker.recognize(orientedImage, {rectangle: plateFrame});
+        text = mergeOcrTexts(text, frameResult.data.text);
+      }
 
       if (needsSparseRetry(text)) {
         ocrPass = 2;
@@ -533,15 +550,15 @@ function detectFieldPresence(text) {
     power: /\b(?:power|potencia|leistung|rated\s+power|input\s+power|total\s+W|kW|HP|CV|P2)\b/i,
     apparentPower: /\b(?:apparent\s+power|kVA)\b/i,
     current: /\b(?:current|corriente|strom|amps?|ampere|amperios|F\.\s*L\.\s*A\.?|FLA|I\s*\(\s*A\s*\))\b/i,
-    capacity: /\b(?:capacity|capacidad|capacità|liters?|litres?|litri|Lt\b|LTR\b)\b/i,
+    capacity: /\b(?:capacity|capacidad|capacità|trocken[\s-]*füllmenge|fullmenge|füllmenge)\b/i,\n    volume: /\b(?:volume|füllraum|fullraum|liters?|litres?|litri|Lt\b|LTR\b)\b/i,
     refrigerant: /\b(?:refrigerant|refrig\.?|kältemittel|fluide\s+frigorigène)\b/i,
     ratio: /\b(?:ratio|reduction|reducci[oó]n|übersetzung|i\s*=)\b/i,
     flow: /\b(?:flow|caudal|portata|durchfluss|Q\s*[:=])\b/i,
     head: /\b(?:head|altura|prevalenza|förderhöhe|H\s*[:=])\b/i,
-    workingPressure: /\b(?:working\s+pressure|max\.?\s*pressure|pressure|presi[oó]n|pressione|druck|MAWP|pmax|PS\b)\b/i,
-    heatingPower: /\b(?:heating\s+elements?|riscaldamento|heater\s+power)\b/i,
-    airPressure: /\b(?:air\s+inlet\s+pressure|pressione\s+aliment\.?\s+aria)\b/i,
-    steamPressure: /\b(?:max\s+steam\s+pressure|pressione\s+max\s+vapore)\b/i,
+    workingPressure: /\b(?:working\s+pressure|max\.?\s*pressure|pressure|presi[oó]n|pressione|betriebsdruck|druck|MAWP|pmax|PS\b)\b/i,\n    overpressure: /\b(?:overpressure|überdruck|ueberdruck|betriebsüberdruck|betriebsueberdruck)\b/i,
+    heatingPower: /\b(?:heating\s+elements?|riscaldamento|heater\s+power)\b/i,\n    heatingType: /\b(?:heating\s+type|beheizungsart|heizart|dampf|steam)\b/i,
+    airPressure: /\b(?:air\s+inlet\s+pressure|air\s+operating\s+pressure|druckluft\s+betriebsdruck|pressione\s+aliment\.?\s+aria)\b/i,\n    airSupplyPressure: /\b(?:air\s+supply\s+pressure|druckluft\s+netzanschlu(?:ss|ß))\b/i,
+    steamPressure: /\b(?:max\s+steam\s+pressure|pressione\s+max\s+vapore)\b/i,\n    operatingTemperature: /\b(?:operating\s+temperature|betriebstemperatur|temperature|temperatur)\b/i,\n    fuseRating: /\b(?:fuse|fusing|absicherung)\b/i,
     speed: /\b(?:speed|velocidad|drehzahl|rpm|r\/min|min-?1|nmax|n1max|n2max|FLRPM)\b/i,
     ipRating: /\b(?:degree\s+of\s+protection|protection\s+degree|IP\s*(?:X\d|\d{0,2}))\b/i,
     cosPhi: /\b(?:cos\s*[φϕ]|cos\s*phi|power\s+factor|P\.\s*F\.?)\b/i,
@@ -701,25 +718,54 @@ function parseNameplate(text) {
   if (multiVoltages.length > 1) result.voltage = joinRatings(multiVoltages, "V");
 
   result.capacity = first(normalized, [
-    /(?:capacity|capacit[aà]|volume)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*(kg|L|Lt)?/i,
+    /(?:zul\.?\s*)?(?:Trocken[\s-]*f[üu]llmenge|fullmenge|füllmenge)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*kg\b/i,
+    /(?:capacity|capacit[aà])\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*(kg|L|Lt)?/i,
     /\bLt\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
     /(?:liters?|litres?|litri)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d+(?:[.,]\d+)?)\s*LTR\.?\b/i,
     /(?:APPROX\.?\s*)?U\.S\.\s*GALS?\.?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i
   ]);
   if (result.capacity) {
-    const cap = normalized.match(/(?:capacity|capacit[aà]|volume)\s*[:=~-]?\s*\d+(?:[.,]\d+)?\s*(kg|L|Lt)?/i);
-    const capUnit = cap && cap[1] ? (/kg/i.test(cap[1]) ? "kg" : "L") : (/\bLt\b|liters?|litres?|litri/i.test(normalized) ? "L" : "");
+    const cap = normalized.match(/(?:capacity|capacit[aà]|trocken[\s-]*f[üu]llmenge|fullmenge|füllmenge)\s*[:=~-]?\s*\d+(?:[.,]\d+)?\s*(kg|L|Lt)?/i);
+    const capUnit = cap && cap[1] ? (/kg/i.test(cap[1]) ? "kg" : "L") : (/Trocken[\s-]*f[üu]llmenge|fullmenge|füllmenge/i.test(normalized) ? "kg" : "");
     if (capUnit && !new RegExp(capUnit + "$", "i").test(result.capacity)) result.capacity += " " + capUnit;
   }
+
+  result.volume = first(normalized, [
+    /(?:F[üu]llraum|Fullraum|volume)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*(?:L|Lt|ltr\.?)\b/i,
+    /\b(\d+(?:[.,]\d+)?)\s*LTR\.?\b/i
+  ]);
+  if (result.volume && !/L$/i.test(result.volume)) result.volume += " L";
 
   result.heatingPower = first(normalized, [
     /(?:(?:Riscaldamento\s*\/\s*Heating\s*Elements?|Caldaia\s*\/\s*(?:Boiler|Bolier))[\s\S]{0,100}?\bW\s*[:=~.\-]*\s*[\[|:_-]*\s*)(\d+(?:[.,]\d+)?)/i
   ]);
   if (result.heatingPower && !/W$/i.test(result.heatingPower)) result.heatingPower += " W";
 
+  if (!result.power) {
+    result.power = first(normalized, [
+      /Anschlu(?:ss|ß)wert\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*kW\b/i
+    ]);
+    if (result.power) result.power += " kW";
+  }
+  result.fuseRating = first(normalized, [
+    /Absicherung\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*A\b/i
+  ]);
+  if (result.fuseRating) result.fuseRating += " A";
+  result.heatingType = first(normalized, [
+    /Beheizungsart\s*[:=~-]?\s*([A-Za-zÄÖÜäöüß-]{3,20})/i
+  ]);
+  result.operatingTemperature = first(normalized, [
+    /(?:zul\.?\s*)?Betriebs[\s-]*temperatur\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*°?C\b/i
+  ]);
+  if (result.operatingTemperature) result.operatingTemperature += " °C";
+  result.airSupplyPressure = first(normalized, [
+    /Druckluft[\s-]*Netzanschlu(?:ss|ß)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i
+  ]);
+  if (result.airSupplyPressure) result.airSupplyPressure += " bar";
+
   result.airPressure = first(normalized, [
-    /(?:Pressione\s+aliment\.\s+aria\s*\/\s*Air\s+inlet\s+pressure)[\s\S]{0,60}?\bBAR[\s:=~.\-\[|_]*(\d+(?:[.,]\d+)?)/i
+    /(?:Pressione\s+aliment\.\s+aria\s*\/\s*Air\s+inlet\s+pressure)[\s\S]{0,60}?\bBAR[\s:=~.\-\[|_]*(\d+(?:[.,]\d+)?)/i,\n    /Druckluft[\s-]*Betriebsdruck\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i
   ]);
   if (result.airPressure && !/bar$/i.test(result.airPressure)) result.airPressure += " bar";
 
@@ -740,7 +786,7 @@ function parseNameplate(text) {
   result.weight = first(normalized, [
     /(?:gewicht\s*\/\s*weight|gewicht|weight|mass|peso)\s*(?:kg)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i
   ]);
-  if (!result.weight && !/(?:capacity|capacit[aà]|volume)\b/i.test(normalized)) {
+  if (!result.weight && !/(?:capacity|capacit[aà]|volume|trocken[\s-]*f[üu]llmenge|fullmenge|füllmenge)\b/i.test(normalized)) {
     result.weight = first(normalized, [/\b(\d+(?:[.,]\d+)?)\s*kg(?!\s*\/\s*h)\b/i]);
   }
   if (result.weight && !/kg$/i.test(result.weight)) result.weight += " kg";
@@ -770,6 +816,7 @@ function parseNameplate(text) {
   if (result.head && !/m$/i.test(result.head)) result.head += " m";
 
   result.workingPressure = first(normalized, [
+    /(?:zul[aä]ssiger\s+)?Betriebsdruck\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i,
     /\b(?:RATED|FULL\s+LOAD)\s+OPERATING\s+PRESSURE\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*PSIG\b/i,
     /\bMAX\.?\s*(?:SERVICE\s+)?PRESS(?:URE)?\.?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*(PSI|PSIG|bar)\b/i,
     /\bMAWP\s*(\d+(?:[.,]\d+)?)\s*PSI\b/i,
@@ -786,13 +833,18 @@ function parseNameplate(text) {
     const pressureUnit = /\bpsig\b/i.test(normalized) ? "psig" : (/\bPSI\b/i.test(normalized) ? "PSI" : (/\bmbar\b/i.test(normalized) ? "mbar" : "bar"));
     if (!/(?:bar|psig)$/i.test(result.workingPressure)) result.workingPressure += " " + pressureUnit;
   }
+  result.overpressure = first(normalized, [
+    /(?:zul\.?\s*)?Betriebs[\s-]*(?:über|ueber)druck\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*bar\b/i
+  ]);
+  if (result.overpressure) result.overpressure += " bar";
+
   result.speed = first(normalized, [
     /\bn1\s*max\s*[:=.-]?\s*(\d{2,5})\s*(?:\/min|r\/?min|rpm)\b/i,
     /(?:^|\n)\s*(?:R\.[ \t]*P\.[ \t]*M\.?|RPM|FLRPM|F\.[ \t]*L\.[ \t]*RPM)[ \t]*[:=.-]?[ \t]*(\d{2,5}(?:[ \t]*\/[ \t]*\d{2,5}){0,3})\b/i,
     /\bINPUT\s+RPM\s*[:=.-]?\s*(\d{2,5})\b/i,
     /\bn\s*max\s*[:=.-]?\s*(\d{2,5})\s*(?:U\/min|1\/min|r\/?min|rpm)\b/i,
     /\b(\d{2,5}\s*[-–]\s*\d{2,5})[ \t]*(?:r\/?min|rpm|min-1|min⁻¹|\/min)\b/i,
-    /\b(\d{2,5})[ \t]*(?:r\/?min|rpm|min-1|min⁻¹|\/min)\b/i,
+    /\b(\d{2,5})[ \t]*(?:r\/?min|rpm|min-1|min⁻¹|U\/min|\/min)\b/i,
     /(?:^|\n)\s*n(?:\s+fix\.?)?\s*[:=~-]?\s*(\d{2,5})\s*(?:1\/min|r\/?min|rpm|min-1|min⁻¹)\b/i,
     /(?:^|\n)\s*(?:RPM|r\/min|min-1|min⁻¹)\s*[:=~-]?\s*(\d{2,5})\b/i
   ]);
@@ -868,7 +920,7 @@ function parseNameplate(text) {
     ["ELGi", /\bELGI\b/i],
     ["Lowara", /\bLowara\b/i],
     ["Calpeda", /\bCalpeda\b/i],
-    ["Emerson", /\bEmerson(?:\s+Climate\s+Technologies)?\b/i]
+    ["Emerson", /\bEmerson(?:\s+Climate\s+Technologies)?\b/i],\n    ["PHARMAGG", /\bPHARMAGG\b/i],\n    ["Kannegiesser", /\bKannegiesser\b/i]
   ];
   const knownBrand = knownBrands.find(entry => entry[1].test(normalized));
   result.manufacturer = knownBrand ? knownBrand[0] : first(normalized, [
