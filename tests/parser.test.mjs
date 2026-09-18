@@ -291,6 +291,133 @@ const fixtures = [
       frequency: '60 Hz',
       speed: '3450 rpm'
     }
+  },
+  {
+    name: 'Trane ERTHA 450 chiller',
+    text: 'TRANE\nN° DE MODELE - MODELL - MODEL - MODELLO - MODELO\nERTHA450RS1P3A1AB1XXXTZB5D1YXXA1AXXX\nN° DE SERIE - WORKS N° - SERIAL N° EKTR 352\nANNEE - BAUJAHR - YEAR 1995\nREFRIGERANT R134a\nC1 20.8 Kg\nLP 17 bar HP 23 bar\nC1 37.5 L\nCOMPRESSOR C1 U/VOLT 380 HZ 50 PH 3 A.MAX 400 KW.MAX 236\nCONTROL 110 V 50 HZ 1 PH 1500 VA\nTRANE 88190 GOLBEY FRANCE',
+    expected: {
+      manufacturer: 'Trane',
+      model: 'ERTHA450RS1P3A1AB1XXXTZB5D1YXXA1AXXX',
+      serialNumber: 'EKTR 352',
+      year: '1995',
+      refrigerant: 'R134a',
+      voltage: '380 V',
+      frequency: '50 Hz',
+      phases: '3',
+      current: '400 A',
+      power: '236 kW'
+    }
+  },
+  {
+    name: 'Alfa Laval M3-FG exchanger',
+    text: 'ALFA LAVAL\nCertified by Alfa Laval - Richmond, VA\nMAWP 150 PSI AT 150 F\nMDMT -20 F AT 150 PSI\nS/N 30117-59880 Year 2018\nModel M3-FG\nArea 52 SQ FT\nA-Dim 51 MM W/17 0.6 MM PLTS\nOrder 8111829\nP.O. 139017-00\nTAG 9633858',
+    expected: {
+      manufacturer: 'Alfa Laval',
+      model: 'M3-FG',
+      serialNumber: '30117-59880',
+      year: '2018',
+      workingPressure: '150 PSI',
+      orderNumber: '8111829'
+    }
+  },
+  {
+    name: 'Schneider 2000 kVA transformer',
+    text: 'Schneider Electric\nTYPE DCU 4331 YEAR 2020 NR 123456\nMODEL DISTRIBUTION TRANSFORMER PHASE 3 FREQUENCY 50 Hz\nRATED POWER 2000 kVA\nRATED VOLTAGE 11550 V 433 V\nRATED CURRENT 100.47 A 2666.7 A\nVECTOR GROUP Dyn11\nCOOLING METHOD KNAN\nTOTAL WEIGHT 5491 kg\nFLUID TYPE MIDEL 7131',
+    expected: {
+      manufacturer: 'Schneider Electric',
+      model: 'DCU 4331',
+      year: '2020',
+      phases: '3',
+      frequency: '50 Hz',
+      apparentPower: '2000 kVA',
+      weight: '5491 kg'
+    }
+  },
+  {
+    name: 'Cleaver-Brooks CB200-400 boiler',
+    text: 'Cleaver Brooks\nCB Packaged\nMODEL CB200-400\nSERIAL NO L-57764\nPRESSURE 150 PSI\nDATE 12 31 1973\nINPUT 1 673 800 BTU/HR\nNAT GAS\nCleaver-Brooks Company',
+    expected: {
+      manufacturer: 'Cleaver-Brooks',
+      model: 'CB200-400',
+      serialNumber: 'L-57764',
+      workingPressure: '150 PSI',
+      year: '1973'
+    }
+  },
+  {
+    name: 'Parker PV Plus hydraulic pump',
+    text: 'Parker\nPMDE - Chemnitz\nMade in Germany\nTyp PV092R1K4T1NFDV\n35296681/001\ncm3/U\nCode LI Serie 4545\nnmax 2300 U/min\npmax 420 bar',
+    expected: {
+      manufacturer: 'Parker',
+      model: 'PV092R1K4T1NFDV',
+      serialNumber: '35296681/001',
+      speed: '2300 rpm',
+      workingPressure: '420 bar'
+    }
+  },
+  {
+    name: 'Riello 40 G10 LC burner',
+    text: 'RIELLO 40 G10 LC\nTIPO/TYPE 464T1 COD. 20013617\nN. 18221165963\nDZUU 4,5 ÷ 10 kg/h\n230V ~ 50Hz 0,17kW\n54 ÷ 120 kW\nCombust. Heizöl/Fuel\nRIELLO HEATING EQUIPMENT',
+    expected: {
+      manufacturer: 'Riello',
+      model: '40 G10 LC',
+      serialNumber: '18221165963',
+      partNumber: '20013617',
+      voltage: '230 V',
+      frequency: '50 Hz',
+      power: '0,17 kW'
+    }
+  },
+  {
+    name: 'Busch R5 vacuum pump',
+    text: 'BUSCH R5\nType RA0040.E503.1002\nSerial No. U124510229\nVacuum 0.5 hPa (0.5 mbar)\nOil ISO VG 100 / 1.0 LTR.\n2012\nMade in U.S.A.',
+    expected: {
+      manufacturer: 'Busch',
+      model: 'RA0040.E503.1002',
+      serialNumber: 'U124510229',
+      year: '2012',
+      workingPressure: '0.5 mbar',
+      capacity: '1.0'
+    }
+  },
+  {
+    name: 'Ingersoll Rand D144IN dryer',
+    text: 'INGERSOLL RAND\nREFRIGERATED COMPRESSED AIR DRYER\nMODEL D144IN\n85 cfm\nPOWER 0,75 kW\nSUPPLY 115/1/60\n8 A\nCOOLING FLUID REFRIGERANT R134a\nMAX INLET AIR TEMP 140 F\nAMBIENT MAX TEMP 122 F\nMAX IN AIR PRESSURE 203 psig\nAIR WORKING PRESS. 101 psig\nLOW SIDE 116 psig HIGH SIDE 261 psig\nDate 1107',
+    expected: {
+      manufacturer: 'Ingersoll Rand',
+      model: 'D144IN',
+      power: '0,75 kW',
+      current: '8 A',
+      refrigerant: 'R134a',
+      workingPressure: '101 psig'
+    }
+  },
+  {
+    name: 'Falk RK1070F3A gearbox',
+    text: 'FALK\nENCLOSED GEAR DRIVE\nMODEL RK1070F3A\nRATIO 151:1\nINPUT RPM 1750\nOUTPUT RPM 11\nSERVICE RATING HP 5\nAPPROX. U.S. GALS. 7.0\nDATE 1/96\nTHE FALK CORPORATION',
+    expected: {
+      manufacturer: 'Falk',
+      model: 'RK1070F3A',
+      ratio: '151:1',
+      speed: '1750 rpm',
+      capacity: '7.0'
+    }
+  },
+  {
+    name: 'Sullair 1509EV AC compressor',
+    text: 'SULLAIR\nYEAR 2020\nWORK ORDER 4495022 B.O.M. NO. P8/230518A\nMODEL NO. 1509EV AC\n125 PSI 80.9 CFM 8.6 Bar 2.3 m3/min\nMax. Opr. Pres. 135 PSI 9.3 Bar\nMin. Opr. Pres. 125 PSI 8.6 Bar\nRelief Pres. 160 PSI 11 Bar\n1765 RPM 460 VOLTS 60 Hz 3 PH 22.6 BHP 19.3 KW\nSERIAL NO. 202002120055',
+    expected: {
+      manufacturer: 'Sullair',
+      model: '1509EV AC',
+      serialNumber: '202002120055',
+      orderNumber: '4495022',
+      year: '2020',
+      voltage: '460 V',
+      frequency: '60 Hz',
+      phases: '3',
+      power: '19.3 kW',
+      speed: '1765 rpm'
+    }
   }
 ];
 
