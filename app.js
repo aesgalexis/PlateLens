@@ -312,8 +312,9 @@ function parseNameplate(text) {
   result.power = first(normalized, [
     /\bTotal\s*W\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
     /(?:total\s+input|input\s+power)\s*[:=~-]?\s*(?:kW|W|HP)?\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i,
-    /\b(\d+(?:[.,]\d+)?)\s*kW\b/i,
-    /(?:^|\n)\s*kW\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i
+    /\b(\d{1,6}(?:[.,]\d+)?)\s*kW\b/i,
+    /(?:^|\n)\s*kW\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
+    /\bkW\s*[:=~-]?\s*(\d{1,6}(?:[.,]\d+)?)(?=\s|$)/i
   ]);
   if (result.power && !/(?:kW|W)$/i.test(result.power)) {
     result.power += /\bTotal\s*W\b/i.test(normalized) ? " W" : " kW";
@@ -358,23 +359,28 @@ function parseNameplate(text) {
   }
 
   result.heatingPower = first(normalized, [
-    /(?:(?:Riscaldamento\s*\/\s*Heating\s*Elements?|Caldaia\s*\/\s*Boiler)[\s\S]{0,100}?\bW\s*[:=~.\-]*\s*[\[|:_-]*\s*)(\d+(?:[.,]\d+)?)/i
+    /(?:(?:Riscaldamento\s*\/\s*Heating\s*Elements?|Caldaia\s*\/\s*(?:Boiler|Bolier))[\s\S]{0,100}?\bW\s*[:=~.\-]*\s*[\[|:_-]*\s*)(\d+(?:[.,]\d+)?)/i
   ]);
   if (result.heatingPower && !/W$/i.test(result.heatingPower)) result.heatingPower += " W";
 
   result.airPressure = first(normalized, [
-    /(?:Pressione\s+aliment\.\s+aria\s*\/\s*Air\s+inlet\s+pressure)[\s\S]{0,60}?\bBAR\s*[:=~.\-]*\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)/i
+    /(?:Pressione\s+aliment\.\s+aria\s*\/\s*Air\s+inlet\s+pressure)[\s\S]{0,60}?\bBAR[\s:=~.\-\[|_]*(\d+(?:[.,]\d+)?)/i
   ]);
   if (result.airPressure && !/bar$/i.test(result.airPressure)) result.airPressure += " bar";
 
   result.steamPressure = first(normalized, [
-    /(?:Pressione\s+max\s+vapore\s*\/\s*Max\s+steam\s+pressure)[\s\S]{0,60}?\bBAR\s*[:=~.\-]*\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)/i
+    /(?:Pressione\s+max\s+vapore\s*\/\s*Max\s+steam\s+pressure)[\s\S]{0,60}?\bBAR[\s:=~.\-\[|_]*(\d+(?:[.,]\d+)?)/i
   ]);
   if (result.steamPressure && !/bar$/i.test(result.steamPressure)) result.steamPressure += " bar";
 
   result.year = first(normalized, [
     /(?:year\s+of\s+manufacture|baujahr\s*\/\s*year|baujahr|year|yr|año|built)\s*[:#.-]?\s*\'?((?:19|20)?\d{2})/i
   ]);
+  const currentEqualsYear = result.current && result.year && result.current.replace(/\s*A$/i, "") === result.year;
+  if (currentEqualsYear) {
+    const labelledCurrentAfterYear = normalized.match(/(?:baujahr\s*\/\s*year|baujahr|year)\s*[:#.-]?\s*(?:19|20)?\d{2}\s+A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i);
+    result.current = labelledCurrentAfterYear && labelledCurrentAfterYear[1] ? labelledCurrentAfterYear[1] + " A" : "";
+  }
 
   result.weight = first(normalized, [
     /(?:gewicht\s*\/\s*weight|gewicht|weight|mass|peso)\s*(?:kg)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i
