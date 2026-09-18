@@ -275,7 +275,7 @@ const fixtures = [
       model: '4RH1-2500-TMK-105',
       serialNumber: 'C69G19417',
       voltage: '380-420 V',
-      frequency: '50 Hz'
+      frequency: '50 / 60 Hz'
     }
   },
   {
