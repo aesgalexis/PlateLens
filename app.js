@@ -286,7 +286,7 @@ function ocrScore(result) {
 }
 function extractionCoverage(text) {
   const parsed = parseNameplate(text);
-  const technicalKeys = ["voltage","frequency","power","apparentPower","current","speed","capacity","flow","head","workingPressure","airPressure","steamPressure"];
+  const technicalKeys = ["voltage","frequency","power","apparentPower","current","speed","capacity","volume","flow","head","workingPressure","overpressure","airPressure","airSupplyPressure","steamPressure","operatingTemperature","fuseRating"];
   const identityKeys = ["manufacturer","model","serialNumber","partNumber","orderNumber"];
   const technicalCount = technicalKeys.filter(key => Boolean(parsed[key])).length;
   const identityCount = identityKeys.filter(key => Boolean(parsed[key])).length;
@@ -823,7 +823,7 @@ function parseNameplate(text) {
   if (result.head && !/m$/i.test(result.head)) result.head += " m";
 
   result.workingPressure = first(normalized, [
-    /(?:zul[aä]ssiger\s+)?Betriebsdruck\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i,
+    /zul[aä]ssiger\s+Betriebsdruck\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i,
     /\b(?:RATED|FULL\s+LOAD)\s+OPERATING\s+PRESSURE\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*PSIG\b/i,
     /\bMAX\.?\s*(?:SERVICE\s+)?PRESS(?:URE)?\.?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*(PSI|PSIG|bar)\b/i,
     /\bMAWP\s*(\d+(?:[.,]\d+)?)\s*PSI\b/i,
