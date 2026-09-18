@@ -34,7 +34,7 @@ function setFile(file) {
   currentFile = file;
   const url = URL.createObjectURL(file);
   previewImage.onload = () => URL.revokeObjectURL(url);
-  previewImage.src = url;
+  previewImage.style.transform = "";\n  previewImage.src = url;
   fileName.textContent = file.name || "Pasted image";
   dropZone.hidden = true;
   previewWrap.hidden = false;
@@ -61,7 +61,7 @@ document.addEventListener("paste", e => {
 });
 
 function reset() {
-  currentFile = null; input.value = ""; previewImage.removeAttribute("src");
+  currentFile = null; input.value = ""; previewImage.removeAttribute("src"); previewImage.style.transform = "";
   previewWrap.hidden = true; dropZone.hidden = false; resultsSection.hidden = true;
   analyzeBtn.disabled = true; resetBtn.hidden = true; progressBar.style.width = "0%";
   progressText.textContent = "Choose an image to begin."; rawText.textContent = "";
@@ -91,6 +91,67 @@ async function prepareOcrImage(file) {
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+function rotateCanvas(source, degrees, maxSide = null) {
+  const angle = ((degrees % 360) + 360) % 360;
+  const swap = angle === 90 || angle === 270;
+  const naturalWidth = swap ? source.height : source.width;
+  const naturalHeight = swap ? source.width : source.height;
+  const scale = maxSide ? Math.min(1, maxSide / Math.max(naturalWidth, naturalHeight)) : 1;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(naturalHeight * scale));
+  const ctx = canvas.getContext("2d", {willReadFrequently:false});
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate(angle * Math.PI / 180);
+  const drawWidth = source.width * scale;
+  const drawHeight = source.height * scale;
+  ctx.drawImage(source, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+  return canvas;
+}
+
+async function detectBestOrientation(worker, source, onProbe) {
+  const candidates = [0, 90, 180, 270];
+  let best = {angle:0, score:-Infinity, text:"", confidence:0};
+  await worker.setParameters({
+    tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+    preserve_interword_spaces: "1"
+  });
+  for (let index = 0; index < candidates.length; index++) {
+    const angle = candidates[index];
+    if (onProbe) onProbe(index, angle);
+    const probe = rotateCanvas(source, angle, 1050);
+    const result = await worker.recognize(probe);
+    const text = (result.data.text || "").trim();
+    const confidence = Number(result.data.confidence || 0);
+    const score = orientationScore(text, confidence);
+    if (score > best.score) best = {angle, score, text, confidence};
+  }
+  return best;
+}
+
+async function refineSkewOrientation(worker, source, baseAngle, baseScore, onProbe) {
+  if (baseScore >= 105) return {angle:baseAngle, score:baseScore};
+  const offsets = [-12, -6, 6, 12];
+  let best = {angle:baseAngle, score:baseScore};
+  await worker.setParameters({
+    tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+    preserve_interword_spaces: "1"
+  });
+  for (let index = 0; index < offsets.length; index++) {
+    const angle = baseAngle + offsets[index];
+    if (onProbe) onProbe(index, angle);
+    const probe = rotateCanvas(source, angle, 1050);
+    const result = await worker.recognize(probe);
+    const text = (result.data.text || "").trim();
+    const confidence = Number(result.data.confidence || 0);
+    const score = orientationScore(text, confidence);
+    if (score > best.score + 4) best = {angle, score};
+  }
+  return best;
 }
 
 function ocrScore(result) {
@@ -143,25 +204,50 @@ analyzeBtn.addEventListener("click", async () => {
       worker = await Tesseract.createWorker("eng", 1, {
         logger: m => {
           if (typeof m.progress === "number") {
-            const base = ocrPass === 1 ? 0 : (ocrPass === 2 ? 70 : 90);
-            const span = ocrPass === 1 ? 68 : (ocrPass === 2 ? 18 : 8);
+            let base;
+            let span;
+            if (ocrPass === 0) {
+              base = orientationProbe * 6;
+              span = 6;
+            } else {
+              base = ocrPass === 1 ? 28 : (ocrPass === 2 ? 76 : 91);
+              span = ocrPass === 1 ? 47 : (ocrPass === 2 ? 14 : 7);
+            }
             const pct = Math.min(98, base + Math.round(m.progress * span));
             progressBar.style.width = pct + "%";
-            progressText.textContent = `${friendlyStatus(m.status)} · ${pct}%`;
+            progressText.textContent = friendlyStatus(m.status) + " · " + pct + "%";
           }
         }
       });
+      ocrPass = 0;
+      progressText.textContent = "Detecting plate orientation…";
+      let orientation = await detectBestOrientation(worker, preparedImage, (index, angle) => {
+        orientationProbe = index;
+        progressText.textContent = "Checking orientation " + angle + "°…";
+      });
+      const refined = await refineSkewOrientation(worker, preparedImage, orientation.angle, orientation.score, (index, angle) => {
+        orientationProbe = index;
+        progressText.textContent = "Checking tilt " + Math.round(angle) + "°…";
+      });
+      orientation.angle = refined.angle;
+      orientation.score = refined.score;
+
+      const orientedImage = rotateCanvas(preparedImage, orientation.angle);
+      previewImage.style.transform = orientation.angle ? "rotate(" + orientation.angle + "deg)" : "";
+      previewImage.style.transition = "transform .2s ease";
+
+      ocrPass = 1;
       await worker.setParameters({
         tessedit_pageseg_mode: Tesseract.PSM.AUTO,
         preserve_interword_spaces: "1"
       });
 
-      let result = await worker.recognize(preparedImage);
+      let result = await worker.recognize(orientedImage);
       let text = (result.data.text || "").trim();
 
       if (Number(result.data.confidence || 0) < 42 || text.length < 24) {
         progressText.textContent = "Low OCR confidence · checking original image…";
-        const fallback = await worker.recognize(currentFile);
+        const fallback = await worker.recognize(orientedImage);
         if (ocrScore(fallback) > ocrScore(result)) {
           result = fallback;
           text = (fallback.data.text || "").trim();
@@ -172,12 +258,12 @@ analyzeBtn.addEventListener("click", async () => {
         ocrPass = 2;
         progressText.textContent = "Reading technical region…";
         const technicalRegion = {
-          left: Math.round(preparedImage.width * 0.04),
-          top: Math.round(preparedImage.height * 0.20),
-          width: Math.round(preparedImage.width * 0.92),
-          height: Math.round(preparedImage.height * 0.60)
+          left: Math.round(orientedImage.width * 0.04),
+          top: Math.round(orientedImage.height * 0.20),
+          width: Math.round(orientedImage.width * 0.92),
+          height: Math.round(orientedImage.height * 0.60)
         };
-        const regionResult = await worker.recognize(preparedImage, {rectangle: technicalRegion});
+        const regionResult = await worker.recognize(orientedImage, {rectangle: technicalRegion});
         text = mergeOcrTexts(text, regionResult.data.text);
       }
 
@@ -188,7 +274,7 @@ analyzeBtn.addEventListener("click", async () => {
           tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
           preserve_interword_spaces: "1"
         });
-        const layoutResult = await worker.recognize(preparedImage);
+        const layoutResult = await worker.recognize(orientedImage);
         text = mergeOcrTexts(text, layoutResult.data.text);
       }
 
@@ -243,6 +329,18 @@ function joinRatings(values, unit) {
   const cleaned = uniqueValues(values.map(value => clean(value).replace(new RegExp("\\s*" + unit + "$", "i"), "")));
   return cleaned.length ? cleaned.join(" / ") + " " + unit : "";
 }
+function orientationScore(text, confidence = 0) {
+  const source = String(text || "").trim();
+  if (!source) return -100;
+  const technicalSignals = (source.match(/\b(?:type|tipo|typ|model|serial|fabr\.?\s*nr|volt(?:age)?|hz|kw|cv|hp|amp(?:er|ere)?|rpm|r\/min|min-?1|ip\s*\d{2}|pressure|bar|q|head|weight|peso|year|baujahr|monof[aá]sico|trif[aá]sico|condensador)\b/gi) || []).length;
+  const units = (source.match(/\b(?:\d+(?:[.,]\d+)?)\s*(?:V(?:olt)?|Hz|kW|W|CV|HP|A|amp(?:er)?|rpm|bar|m3\/h|m³\/h|l\/min|lts?\/hora|kg)\b/gi) || []).length;
+  const words = (source.match(/\b[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3,}\b/g) || []).length;
+  const garbage = (source.match(/[{}<>^~]{2,}|[|\\]{3,}/g) || []).length;
+  const parsed = parseNameplate(source);
+  const parsedCount = Object.values(parsed).filter(Boolean).length;
+  return Number(confidence || 0) * 0.55 + technicalSignals * 10 + units * 7 + parsedCount * 5 + Math.min(18, words * 0.7) + Math.min(12, source.length / 35) - garbage * 8;
+}
+
 function parseMotorTable(lines) {
   const index = lines.findIndex(line => /\bV\b/i.test(line) && /\bHz\b/i.test(line) && /\bkW\b/i.test(line) && /(?:r\/min|min-?1|rpm)/i.test(line) && /\bA\b/.test(line));
   if (index < 0) return {};
@@ -274,7 +372,7 @@ function parseNameplate(text) {
   // Prefer values explicitly attached to labels. Industrial plates often place
   // another label/value pair on the same OCR line, so each capture is bounded.
   result.model = first(normalized, [
-    /(?:^|\n)\s*(?:modello\s*\/\s*model|model(?:\s*(?:no|number))?|type|typ|mod\.?|modelo|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:REV|INPUT|OUTPUT|Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N|Part\s*(?:No|Number)|Product\s*(?:No|Number))\b))/im
+    /(?:^|\n)\s*(?:modello\s*\/\s*model|model(?:\s*(?:no|number))?|type|tipo|typ|mod\.?|modelo|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:REV|INPUT|OUTPUT|Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N|Part\s*(?:No|Number)|Product\s*(?:No|Number))\b))/im
   ]);
   result.serialNumber = first(normalized, [
     /(?:matricola\s*\/\s*serial\s*number|serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.=\-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|kW|KW|A|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
@@ -329,7 +427,7 @@ function parseNameplate(text) {
 
   result.current = first(normalized, [
     /\b(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)*)[ \t]*A(?![-A-Z0-9])/i,
-    /(?:current|amp(?:s|ere)?|corriente|strom)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\s*A?\b/i,
+    /(?:current|amp(?:s|ere)?|corriente|strom)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\s*A?\b/i,\n    /\b(\d+(?:[.,]\d+)?)\s*amper(?:e|ios?)?\b/i,
     /(?:^|\n)\s*A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
     /(?:baujahr\s*\/\s*year|baujahr|year)\s*[:#.-]?\s*(?:19|20)?\d{2}\s+A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i
   ]);
@@ -356,8 +454,7 @@ function parseNameplate(text) {
     /\bVolt\s*[~=:.-]*\s*[\[|:_-]*\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)(?=\s|\]|$)/i,
     /\bIN\s*:\s*(3x\d{2,4}\s*[-/]\s*\d{2,4})\s*V/i,
     /(?:voltage|volt|tension|spannung)\s*[:=~-]?\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V?\b/i,
-    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V\b/i
-  ]);
+    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V\b/i,\n    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*Volt\b/i\n  ]);
   if (result.voltage && !/V$/i.test(result.voltage)) result.voltage += " V";
   const multiVoltages = uniqueValues([...normalized.matchAll(/\b(\d{3,4}Y?\s*\/\s*\d{3,4})\s*V\b/gi)].map(match => match[1]));
   if (multiVoltages.length > 1) result.voltage = joinRatings(multiVoltages, "V");
@@ -415,16 +512,16 @@ function parseNameplate(text) {
   ]);
 
   result.flow = first(normalized, [
-    /\bQ\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*(?:m[³3]\/h|l\/s|l\/min)\b/i
+    /\bQ\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?)\s*(?:m[³3]\/h|l\/s|l\/min|lts?\/hora|litros?\/hora)\b/i
   ]);
   if (result.flow) {
-    const flowUnit = normalized.match(/\bQ\s*[:=.-]?\s*\d+(?:[.,]\d+)?\s*(m[³3]\/h|l\/s|l\/min)\b/i);
+    const flowUnit = normalized.match(/\bQ\s*[:=.-]?\s*\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?\s*(m[³3]\/h|l\/s|l\/min|lts?\/hora|litros?\/hora)\b/i);
     if (flowUnit && flowUnit[1]) result.flow += " " + flowUnit[1];
   }
 
   result.head = first(normalized, [
-    /(?:^|\n)\s*H\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*m\b/i,
-    /\bQ\s*[:=.-]?\s*\d+(?:[.,]\d+)?\s*(?:m[³3]\/h|l\/s|l\/min)[^\n]{0,40}?\bH\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*m\b/i
+    /(?:^|\n)\s*H\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?)\s*(?:m|metros?)\b/i,
+    /\bQ\s*[:=.-]?\s*\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?\s*(?:m[³3]\/h|l\/s|l\/min|lts?\/hora)[^\n]{0,50}?\bH\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?)\s*(?:m|metros?)\b/i
   ]);
   if (result.head && !/m$/i.test(result.head)) result.head += " m";
 
@@ -473,7 +570,8 @@ function parseNameplate(text) {
     ["EBARA", /\bEBARA\b/i],
     ["Alfa Laval", /\bAlfa\s+Laval\b/i],
     ["Festo", /\bFesto\b/i],
-    ["GEA", /\bGEA\b/i]
+    ["GEA", /\bGEA\b/i],
+    ["BLOCH", /\bBLOCH\b/i]
   ];
   const knownBrand = knownBrands.find(entry => entry[1].test(normalized));
   result.manufacturer = knownBrand ? knownBrand[0] : first(normalized, [
