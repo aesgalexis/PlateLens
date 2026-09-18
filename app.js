@@ -604,7 +604,7 @@ function parseNameplate(text) {
   if (result.voltage) {
     const voltageValue = result.voltage.replace(/\s*V$/i, "").replace(/\s+/g, "").toLowerCase();
     const matchingLines = lines.filter(line => line.replace(/\s+/g, "").toLowerCase().includes(voltageValue + "v"));
-    const capacitorOnlyVoltage = matchingLines.length > 0 && matchingLines.every(line => /condensador|capacitor|condenser/i.test(line));
+    const capacitorOnlyVoltage = matchingLines.length > 0 && matchingLines.every(line => /(?:co)?ndensador|capacitor|condenser/i.test(line));
     if (capacitorOnlyVoltage) result.voltage = "";
   }
   const multiVoltages = uniqueValues([...normalized.matchAll(/\b(\d{3,4}Y?\s*\/\s*\d{3,4})\s*V\b/gi)].map(match => match[1]));
