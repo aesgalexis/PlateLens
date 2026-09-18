@@ -94,7 +94,7 @@ const plates = [
   {
     name: 'Carrier 30XA1312 chiller',
     text: 'Carrier\nMODEL 30XA1312-A0041-PE-\nSERIAL M2016017766\nYEAR 2017\nRefrigerant R134a\nTransport charge 226 kg\nCircuit 1 110 kg Circuit 2 116 kg',
-    expected: {manufacturer:'Carrier', model:'30XA1312-A0041-PE-', serialNumber:'M2016017766', year:'2017', refrigerant:'R134a'}
+    expected: {manufacturer:'Carrier', model:'30XA1312-A0041-PE', serialNumber:'M2016017766', year:'2017', refrigerant:'R134a'}
   },
   {
     name: 'Daikin EWAD100E chiller',
