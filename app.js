@@ -1,5 +1,5 @@
 const fields = [
-  ["manufacturer","Manufacturer"],["model","Model / type"],["serialNumber","Serial number"],
+  ["manufacturer","Manufacturer"],["equipment","Equipment / description"],["model","Model / type"],["serialNumber","Serial number"],
   ["voltage","Voltage"],["frequency","Frequency"],["power","Power"],["current","Current"],
   ["speed","Speed"],["ipRating","IP rating"],["year","Year"],["cosPhi","Power factor / cos φ"],["weight","Weight"]
 ];
@@ -125,48 +125,92 @@ function first(text, patterns) {
   return "";
 }
 function parseNameplate(text) {
-  const normalized = text.replace(/[–—]/g,"-").replace(/Ø/g,"0");
+  const normalized = text
+    .replace(/[–—]/g,"-")
+    .replace(/Ø/g,"0")
+    .replace(/[ \t]+/g," ");
   const lines = normalized.split(/\r?\n/).map(clean).filter(Boolean);
   const result = {};
 
+  // Prefer values explicitly attached to labels. Industrial plates often place
+  // another label/value pair on the same OCR line, so each capture is bounded.
   result.model = first(normalized, [
-    /(?:model|type|typ|mod\.?|modelo)\s*[:#-]?\s*([A-Z0-9][A-Z0-9 .\/_-]{2,30})/i
+    /(?:^|\n)\s*(?:model|type|typ|mod\.?|modelo)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]*(?:\s+[A-Z0-9._\/-]+){0,3}?)(?=\s+(?:Hz|kW|KW|A|V(?:olt)?|serial|fabr\.?|year|baujahr|weight|gewicht)\b|\n|$)/im
   ]);
   result.serialNumber = first(normalized, [
-    /(?:serial(?:\s*(?:no|number|nr))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie)\s*[:#-]?\s*([A-Z0-9][A-Z0-9.\/_-]{2,30})/i
+    /(?:serial(?:\s*(?:no|number|nr))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s+(?:Hz|kW|KW|A|V(?:olt)?|year|baujahr|weight|gewicht)\b|\n|$)/im
   ]);
-  result.voltage = first(normalized, [
-    /(?:voltage|volt|tension|spannung)?\s*[:=-]?\s*((?:\d{2,4}(?:\s*[\/\-]\s*\d{2,4})?\s*)V\b)/i
+
+  result.frequency = first(normalized, [
+    /\bHz\s*[:=~-]?\s*((?:50|60)(?:[.,]\d+)?)(?=\s|$)/i,
+    /\b((?:50|60)(?:[.,]\d+)?)\s*Hz\b/i
   ]);
-  result.frequency = first(normalized, [/((?:50|60)(?:\s*\/\s*(?:50|60))?\s*Hz\b)/i]);
+  if (result.frequency && !/Hz$/i.test(result.frequency)) result.frequency += " Hz";
+
   result.power = first(normalized, [
-    /(?:power|p\d?|potencia)?\s*[:=-]?\s*((?:\d+(?:[.,]\d+)?)\s*(?:kW|W|HP|CV)\b)/i
+    /\bkW\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
+    /\b(\d+(?:[.,]\d+)?)\s*kW\b/i
   ]);
+  if (result.power && !/kW$/i.test(result.power)) result.power += " kW";
+
   result.current = first(normalized, [
-    /(?:current|amp(?:s|ere)?|corriente)?\s*[:=-]?\s*((?:\d+(?:[.,]\d+)?(?:\s*[\/\-]\s*\d+(?:[.,]\d+)?)?)\s*A\b)/i
+    /(?:^|\s)A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
+    /(?:current|amp(?:s|ere)?|corriente|strom)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*A?\b/i,
+    /\b(\d+(?:[.,]\d+)?)\s*A\b/i
   ]);
+  if (result.current && !/A$/i.test(result.current)) result.current += " A";
+
+  result.voltage = first(normalized, [
+    /\bVolt\s*[~=:.-]?\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)(?=\s|$)/i,
+    /(?:voltage|volt|tension|spannung)\s*[:=~-]?\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V?\b/i,
+    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V\b/i
+  ]);
+  if (result.voltage && !/V$/i.test(result.voltage)) result.voltage += " V";
+
+  result.year = first(normalized, [
+    /(?:baujahr\s*\/\s*year|baujahr|year|yr|año|built|date)\s*[:#.-]?\s*((?:19|20)\d{2})/i
+  ]);
+
+  result.weight = first(normalized, [
+    /(?:gewicht\s*\/\s*weight|gewicht|weight|mass|peso)\s*(?:kg)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
+    /\b(\d+(?:[.,]\d+)?)\s*kg\b/i
+  ]);
+  if (result.weight && !/kg$/i.test(result.weight)) result.weight += " kg";
+
   result.speed = first(normalized, [
     /((?:\d{2,5})\s*(?:r\/?min|rpm|min-1|min⁻¹)\b)/i
   ]);
   result.ipRating = first(normalized, [/(\bIP\s*\d{2}[A-Z]?\b)/i]);
-  result.year = first(normalized, [
-    /(?:year|yr|año|built|date)\s*[:#-]?\s*((?:19|20)\d{2})/i,
-    /\b((?:19|20)\d{2})\b/
-  ]);
   result.cosPhi = first(normalized, [
     /(?:cos\s*[φϕø]|power\s*factor|pf)\s*[:=-]?\s*(0[.,]\d{1,3})/i
   ]);
-  result.weight = first(normalized, [
-    /(?:weight|mass|peso|kg)\s*[:=-]?\s*((?:\d+(?:[.,]\d+)?)\s*kg\b)/i
-  ]);
 
-  const genericLabels = /^(model|type|typ|serial|s\/n|voltage|power|current|frequency|hz|rpm|ip|year|cos)/i;
-  const candidate = lines.find(line =>
-    line.length >= 2 && line.length <= 32 &&
-    /[A-Za-z]/.test(line) && !genericLabels.test(line) &&
-    !/\b(?:V|Hz|kW|rpm|IP\d|A)\b/i.test(line)
+  // Company lines are a stronger manufacturer signal than arbitrary first text.
+  result.manufacturer = first(normalized, [
+    /\b([A-Z][A-Za-z0-9&. -]{1,35}?(?:GmbH(?:\s*&\s*Co\.?)?|AG|Ltd\.?|S\.?A\.?|S\.?r\.?l\.?|Inc\.?|Corp\.?))(?=,|\n|$)/i
+  ]);
+  if (/\bveit\b/i.test(normalized)) result.manufacturer = "VEIT";
+
+  // Description normally sits above the technical key/value rows.
+  const technicalStart = lines.findIndex(line =>
+    /^(?:model|type|typ|fabr\.?\s*nr|serial|baujahr|year|gewicht|weight|hz|kw|volt|voltage|current|strom)\b/i.test(line)
   );
-  result.manufacturer = candidate || "";
+  const descriptionPool = (technicalStart > 0 ? lines.slice(0, technicalStart) : lines.slice(0, 6))
+    .filter(line =>
+      line.length >= 4 &&
+      line.length <= 60 &&
+      !/^CE$/i.test(line) &&
+      !/^veit$/i.test(line) &&
+      !/GmbH|Justus|Germany|www\.|@/i.test(line)
+    );
+  result.equipment = descriptionPool.find(line =>
+    /table|machine|motor|pump|dryer|washer|ironing|bügel|compressor|drive|fan|oven|boiler/i.test(line)
+  ) || descriptionPool[descriptionPool.length - 1] || "";
+
+  if (!result.year) {
+    result.year = first(normalized, [/\b((?:19|20)\d{2})\b/]);
+  }
+
   return result;
 }
 
