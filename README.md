@@ -2,6 +2,8 @@
 
 Turn equipment nameplates into structured, editable data.
 
+**Live:** https://aesgalexis.github.io/PlateLens/
+
 PlateLens is a small browser-based tool for technicians, maintainers and anyone who needs to copy data from machine, motor, pump, drive or equipment nameplates into a useful record.
 
 ## Current V1
@@ -28,7 +30,7 @@ Then open <http://localhost:8080>.
 
 ## GitHub Pages
 
-The site is intentionally static and can be published directly from the repository root with GitHub Pages.
+Live site: <https://aesgalexis.github.io/PlateLens/>\n\nThe site is intentionally static and can be published directly from the repository root with GitHub Pages.
 
 ## Roadmap
 
