@@ -55,3 +55,27 @@ The automated parser suite also includes two noisy OCR snapshots from real VEIT 
     Source: https://media.copeland.com/ff6556eb-dbad-4757-8ef4-b16d00377e59/AE105-Installation%20and%20Service.pdf
 20. EBARA EVM — TYPE and P/No labels plus pump Q/H, P2, frequency and rotational speed.
     Source: https://www.ebara.es/wp-content/uploads/2016/01/EVMS/Databook60Hz_EVMS.pdf
+
+
+## Third public corpus
+
+21. Trane ERTHA 450 water chiller — multilingual model/serial/year labels, R134a charge, LP/HP pressure rows, compressor electrical ratings and control circuit.
+    Source: https://www.hosbv.com/en/product/19883/waterchillers/Trane-ERTHA-450.html
+22. Alfa Laval M3-FG plate heat exchanger — S/N, year, MAWP/MDMT, model, area, A-dimension, order and tag numbers.
+    Source: https://www.ebay.com/itm/305575565008
+23. Schneider Electric 2000 kVA distribution transformer — type, year, phases, frequency, kVA, multiple voltages/currents, vector group, cooling method, total weight and MIDEL fluid.
+    Source: https://b2bmap.com/products/schneider-2000kva-copper-dyn11-midel-transformer
+24. Cleaver-Brooks CB200-400 packaged boiler — model, serial, pressure in PSI, date and BTU/hr input.
+    Source: https://www.c3surplus.com/listings/5133477-used-400-hp-cleaver-brooks-150-psi-steam-boiler-model-1973-model-cb200-400
+25. Parker PV Plus hydraulic pump — Typ, standalone serial line, nmax in U/min and pmax in bar.
+    Source: https://www.ebay.com/itm/383178426366
+26. Riello 40 G10 LC burner — multilingual Tipo/Type, COD. product code, serial, fuel-flow range, 230 V / 50 Hz motor power and burner output range.
+    Source: https://www.ebay.com/itm/266181986796
+27. Busch R5 vacuum pump — type, serial, vacuum in hPa/mbar, oil grade/capacity and manufacturing year.
+    Source: https://shopee.tw/%E8%B6%85%E6%96%B0%E7%BE%8E%E5%9C%8B%E8%A3%BDBUSCH-R5-0040-2HP%E5%96%AE%E7%B4%9A%E6%97%8B%E7%89%87%E5%BC%8F%E7%9C%9F%E7%A9%BA%E5%B9%AB%E6%B5%A6-%E7%9C%9F%E7%A9%BA%E6%A9%9F-%E7%9C%9F%E7%A9%BA%E5%8C%85%E8%A3%9D-%E5%8A%A0%E5%B7%A5%E7%89%A9%E5%90%B8%E9%99%84%E5%8F%AF%E7%94%A8%28%E5%A4%96%E5%8C%AF%E6%96%B0%E5%93%81%E6%80%A7%E8%83%BD%E5%84%AA%29-i.8604508.25916012122
+28. Ingersoll Rand D144IN refrigerated air dryer — CFM, kW, supply notation, current, R134a and several PSIG pressure fields.
+    Source: https://www.exfactory.com/Detail/AC-011542/ingersoll-rand-d144in
+29. Falk RK1070F3A enclosed gear drive — ratio, input/output RPM, service HP, oil capacity in U.S. gallons and month/year date.
+    Source: https://www.slevysurplus.com/surplus-equipment/gearboxes-speed-reducers/gearboxes-speed-reducers-power-transmission/107859-falk-enclosed-gear-drive-1511-ratio-rk1070f3a
+30. Sullair 1509EV AC compressor — work order/BOM, model, serial, PSI/bar, CFM/m³/min, RPM, VOLTS, Hz, PH and BHP/kW on a dense mixed-units plate.
+    Source: https://www.bidspotter.com/en-us/auction-catalogues/new-mill-capital/catalogue-id-bscnew10491/lot-fdbc3ecf-18bc-4b93-848f-b3d20111960c
