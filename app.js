@@ -402,7 +402,9 @@ function parseNameplate(text) {
     /\bPH\s*[:#=.-]?\s*[\[|:_-]*\s*([123])(?=\s|\]|$)/i,
     /(?:phase|phases|fasi)\s*[:#=.-]?\s*([123])\b/i,
     /\b(monof[aá]sico)\b/i,
-    /\b(trif[aá]sico)\b/i,\n    /\b([13])\s*PH\b/i\n  ]);
+    /\b(trif[aá]sico)\b/i,
+    /\b([13])\s*PH\b/i
+  ]);
   if (/^monof/i.test(result.phases || "")) result.phases = "1";
   if (/^trif/i.test(result.phases || "")) result.phases = "3";
 
@@ -460,7 +462,8 @@ function parseNameplate(text) {
     /\bVolt\s*[~=:.-]*\s*[\[|:_-]*\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)(?=\s|\]|$)/i,
     /\bIN\s*:\s*(3x\d{2,4}\s*[-/]\s*\d{2,4})\s*V/i,
     /(?:voltage|volt|tension|spannung)\s*[:=~-]?\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V?\b/i,
-    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V\b/i,\n    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*VOLTS?\b/i,
+    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V\b/i,
+    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*VOLTS?\b/i,
     /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*Volt\b/i
   ]);
   if (result.voltage && !/V$/i.test(result.voltage)) result.voltage += " V";
