@@ -563,11 +563,18 @@ function parseNameplate(text) {
   // Prefer values explicitly attached to labels. Industrial plates often place
   // another label/value pair on the same OCR line, so each capture is bounded.
   result.model = first(normalized, [
+    /\\b(?:compressor|pump|unit)\\s+model\\s*[:#.-]?\\s*([A-Z0-9][A-Z0-9.+_\\/-]*(?:\\s+[A-Z0-9.+_\\/-]+){0,3})\\s*(?=\\n|$)/im,
     /(?:^|\n)\s*(?:n[°º]?\s*de\s*modele|modell|modello|modelo|model(?:\s*(?:no|number))?|type|tipo|typ|mod\.?|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:REV|INPUT|OUTPUT|Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N|Part\s*(?:No|Number)|Product\s*(?:No|Number))\b))/im
   ]);
   result.serialNumber = first(normalized, [
     /(?:matricola\s*\/\s*serial\s*number|n[°º]?\s*de\s*serie|works\s*n[°º]?|serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\.?\s*nr\.?|(?:^|\n)\s*No\.?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.=\-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|kW|KW|A|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
   ]);
+  if (!result.serialNumber) {
+    result.serialNumber = first(normalized, [
+      /\bserial(?:\s*(?:no|number|nr))?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,30})/i,
+      /(?:^|\n)\s*Nr\.?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,30})/im
+    ]);
+  }
   result.partNumber = first(normalized, [
     /(?:part\s*(?:no|number)|p\/n|p(?:\/|-|\.)?\s*no\.?|product\s*(?:no|number)|article\s*no\.?|cod\.?|code|cat\.?\s*no(?:\.\/part\s*no\.?)?)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
   ]);
@@ -614,6 +621,11 @@ function parseNameplate(text) {
     /\b(?:Hz|F\s*\(\s*Hz\s*\))\s*[:=~-]?\s*((?:50|60)(?:\s*\/\s*(?:50|60))?)(?=\s|$)/i
   ]);
   if (result.frequency && !/Hz$/i.test(result.frequency)) result.frequency += " Hz";
+  const hasSlashFrequency = /\b(?:50\s*\/\s*60|60\s*\/\s*50)\s*Hz\b/i.test(normalized);
+  if (!hasSlashFrequency) {
+    const standaloneFrequencies = uniqueValues([...normalized.matchAll(/\b(50|60)\s*Hz\b/gi)].map(match => match[1]));
+    if (standaloneFrequencies.length > 1) result.frequency = joinRatings(standaloneFrequencies, "Hz");
+  }
   if (!result.frequency && /\bH[eEz]\s*\[\s*S[O0]\s*\]/i.test(normalized)) result.frequency = "50 Hz";
 
   result.power = first(normalized, [
