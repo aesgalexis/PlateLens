@@ -9,10 +9,10 @@ PlateLens is a small browser-based tool for technicians, maintainers and anyone 
 ## Current V1
 
 - Drop, choose or paste a nameplate photo.
-- OCR runs in the browser with Tesseract.js.
+- OCR runs in the browser with Tesseract.js using English, German, Italian and Spanish language data.
 - Images are locally rescaled and contrast-enhanced before OCR; weak reflective-plate reads can also trigger an adaptive black/white OCR pass.
 - Auto-orientation checks 0°, 90°, 180° and 270° before the main read; weak results also probe small ±6°/±12° deskew offsets.
-- Incomplete reads can trigger a second pass over the central technical region and an alternate page-segmentation pass.
+- Incomplete reads can trigger a second pass over the inner plate frame, the central technical region, a high-contrast variant and alternate page-segmentation modes.
 - The image is not uploaded by PlateLens.
 - Common fields are detected automatically: manufacturer, equipment, model, serial/part/order number, date/year, phases, voltage, frequency, real/apparent power, current, speed, IP rating, weight, capacity, refrigerant/medium, ratio, flow/head and pressure.
 - Detected data is presented as an editable form; fields that are not present stay hidden, while labels detected with unreadable values remain visible as empty review fields. All empty fields can still be revealed manually.
@@ -39,7 +39,7 @@ The site is intentionally static and can be published directly from the reposito
 
 ## Regression corpus
 
-The parser is checked against 203 automated regression cases: 50 public hand-curated nameplate formats, three noisy OCR samples from real plates, a 100-case stress suite generated from 20 real industrial plate families, and a separate corpus transcribed from 50 distinct real nameplate photographs found online. Coverage includes pumps, compressors, VFDs, industrial motors, industrial laundry equipment, gearboxes and several multi-rating electrical table layouts.
+The parser is checked against 204 automated regression cases: 50 public hand-curated nameplate formats, four noisy OCR samples from real plates, a 100-case stress suite generated from 20 real industrial plate families, and a separate corpus transcribed from 50 distinct real nameplate photographs found online. Coverage includes pumps, compressors, VFDs, industrial motors, industrial laundry equipment, gearboxes and several multi-rating electrical table layouts.
 
 Run the regression set with:
 
