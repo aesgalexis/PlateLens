@@ -260,7 +260,7 @@ const plates = [
     name: 'Bell & Gossett Series 90 pump',
     text: 'Bell & Gossett\nMODEL 90\nSIZE 2AA 4.5BF\nPUMP CAPACITY 65 GPM 15 FT\nMOTOR CAPACITY 5 HP 1800 RPM\nSERIAL 2136508-01 HR',
     expected: {manufacturer:'Bell & Gossett', model:'90', serialNumber:'2136508-01', flow:'65 GPM', speed:'1800 rpm'}
-
+  }
 ];
 
 assert.equal(plates.length, 50, 'Online real-photo corpus must contain exactly 50 distinct plates');
