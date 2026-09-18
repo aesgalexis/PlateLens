@@ -447,7 +447,7 @@ function parseNameplate(text) {
   if (!result.frequency && /\bH[eEz]\s*\[\s*S[O0]\s*\]/i.test(normalized)) result.frequency = "50 Hz";
 
   result.power = first(normalized, [
-    /(?:kW|KW)\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\b/i,
+    /(?:^|\n)\s*(?:kW|KW)[ \t]*[:=.-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)*)\b/i,
     /\bkW\.?MAX\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\bTotal\s*W\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
     /(?:total\s+input|input\s+power)\s*[:=~-]?\s*(?:kW|W|HP)?\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i,
@@ -467,7 +467,7 @@ function parseNameplate(text) {
   result.current = first(normalized, [
     /\bA\.?MAX\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d{1,5}(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d{1,5}(?:[.,]\d+)?)*)[ \t]*A(?![-A-Z0-9])/i,
-    /(?:current|amp(?:s|ere)?|corriente|strom)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\s*A?\b/i,
+    /(?:current|amp(?:s|ere)?|corriente|strom)[ \t]*[:=~-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)*)[ \t]*A?\b/i,
     /(?:F\.\s*L\.\s*A\.?|FLAMPS|AMPS?|I\s*\(\s*A\s*\))\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?){0,3})\b/i,
     /\b(\d+(?:[.,]\d+)?)\s*Amps?\b/i,
     /\b(\d+(?:[.,]\d+)?)\s*amper(?:e|ios?)?\b/i,
@@ -493,6 +493,7 @@ function parseNameplate(text) {
   }
 
   result.voltage = first(normalized, [
+    /\b(\d{2,4}\s*\.{2,3}\s*\d{2,4})\s*V(?:AC|DC)?\b/i,
     /(?:VOLTS?|V\.|U\s*\(\s*V\s*\))\s*[:=.-]?\s*((?:\d{2,4}(?:\s*[-\/]\s*\d{2,4})?)(?:\s*\/\s*\d{2,4}(?:\s*[-\/]\s*\d{2,4})?)*)/i,
     /\b3AC\s*(\d{2,4}\s*[-–]\s*\d{2,4})\s*V?/i,
     /\b(\d{3,4}(?:\s*[\/-]\s*\d{3,4})?)\s*Volt\b/i,
