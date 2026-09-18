@@ -20,14 +20,35 @@ const formGrid = document.querySelector("#formGrid");
 const rawText = document.querySelector("#rawText");
 const fieldCount = document.querySelector("#fieldCount");
 const recordForm = document.querySelector("#recordForm");
+const showEmptyBtn = document.querySelector("#showEmptyBtn");
 let currentFile = null;
+let showEmptyFields = false;
 
 for (const [name,label] of fields) {
   const wrapper = document.createElement("label");
   wrapper.className = "field";
+  wrapper.dataset.field = name;
   wrapper.innerHTML = `<span>${label}</span><input name="${name}" autocomplete="off">`;
   formGrid.appendChild(wrapper);
 }
+
+function updateFieldVisibility() {
+  let visible = 0;
+  for (const [name] of fields) {
+    const inputEl = recordForm.elements[name];
+    const wrapper = inputEl.closest(".field");
+    const hasValue = Boolean(String(inputEl.value || "").trim());
+    wrapper.hidden = !showEmptyFields && !hasValue;
+    if (hasValue) visible++;
+  }
+  fieldCount.textContent = visible + " field" + (visible === 1 ? "" : "s") + " detected";
+  showEmptyBtn.textContent = showEmptyFields ? "Hide empty fields" : "Show empty fields";
+}
+
+showEmptyBtn.addEventListener("click", () => {
+  showEmptyFields = !showEmptyFields;
+  updateFieldVisibility();
+});
 
 function setFile(file) {
   if (!file || !file.type.startsWith("image/")) return;
@@ -66,7 +87,7 @@ function reset() {
   previewWrap.hidden = true; dropZone.hidden = false; resultsSection.hidden = true;
   analyzeBtn.disabled = true; resetBtn.hidden = true; progressBar.style.width = "0%";
   progressText.textContent = "Choose an image to begin."; rawText.textContent = "";
-  recordForm.reset();
+  recordForm.reset(); showEmptyFields = false; updateFieldVisibility();
 }
 
 async function prepareOcrImage(file) {
@@ -752,13 +773,12 @@ function parseNameplate(text) {
 }
 
 function fillForm(data) {
-  let found = 0;
+  showEmptyFields = false;
   for (const [name] of fields) {
     const element = recordForm.elements[name];
     element.value = data[name] || "";
-    if (element.value) found++;
   }
-  fieldCount.textContent = `${found} field${found === 1 ? "" : "s"} detected`;
+  updateFieldVisibility();
 }
 
 function record() {
