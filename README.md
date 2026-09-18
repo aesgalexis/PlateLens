@@ -14,7 +14,7 @@ PlateLens is a small browser-based tool for technicians, maintainers and anyone 
 - Auto-orientation checks 0°, 90°, 180° and 270° before the main read; weak results also probe small ±6°/±12° deskew offsets.
 - Incomplete reads can trigger a second pass over the central technical region and an alternate page-segmentation pass.
 - The image is not uploaded by PlateLens.
-- Common fields are detected automatically: manufacturer, equipment, model, serial/part number, date/year, phases, voltage, frequency, power, current, speed, IP rating, weight, capacity, refrigerant/medium, ratio, flow/head and pressure.
+- Common fields are detected automatically: manufacturer, equipment, model, serial/part/order number, date/year, phases, voltage, frequency, real/apparent power, current, speed, IP rating, weight, capacity, refrigerant/medium, ratio, flow/head and pressure.
 - Detected data is presented as an editable form.
 - Copy the result as plain text or JSON, or download a JSON record.
 - Raw OCR text remains visible for verification.
@@ -39,7 +39,7 @@ The site is intentionally static and can be published directly from the reposito
 
 ## Regression corpus
 
-The parser is checked against 22 regression fixtures: 20 public real-world nameplate formats plus two noisy OCR samples from real plates. Coverage includes pumps, compressors, drives, industrial laundry equipment, gearboxes and several motor rating-table layouts.
+The parser is checked against 32 regression fixtures: 30 public real-world nameplate formats plus two noisy OCR samples from real plates. Coverage includes pumps, compressors, drives, industrial laundry equipment, gearboxes and several motor rating-table layouts.
 
 Run the regression set with:
 
