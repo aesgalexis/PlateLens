@@ -1,6 +1,7 @@
 const fields = [
   ["manufacturer","Manufacturer"],["equipment","Equipment / description"],["model","Model / type"],["serialNumber","Serial number"],
-  ["voltage","Voltage"],["frequency","Frequency"],["power","Power"],["current","Current"],
+  ["date","Date"],["phases","Phases"],["voltage","Voltage"],["frequency","Frequency"],["power","Total power"],["current","Current"],
+  ["capacity","Capacity"],["heatingPower","Heating power"],["airPressure","Air inlet pressure"],["steamPressure","Max steam pressure"],
   ["speed","Speed"],["ipRating","IP rating"],["year","Year"],["cosPhi","Power factor / cos φ"],["weight","Weight"]
 ];
 
@@ -135,14 +136,23 @@ function parseNameplate(text) {
   // Prefer values explicitly attached to labels. Industrial plates often place
   // another label/value pair on the same OCR line, so each capture is bounded.
   result.model = first(normalized, [
-    /(?:^|\n)\s*(?:model|type|typ|mod\.?|modelo)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]*(?:\s+[A-Z0-9._\/-]+){0,3}?)(?=\s+(?:Hz|kW|KW|A|V(?:olt)?|serial|fabr\.?|year|baujahr|weight|gewicht)\b|\n|$)/im
+    /(?:^|\n)\s*(?:modello\s*\/\s*model|model|type|typ|mod\.?|modelo)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]*(?:\s+[A-Z0-9._\/-]+){0,2}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht)\b))/im
   ]);
   result.serialNumber = first(normalized, [
-    /(?:serial(?:\s*(?:no|number|nr))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s+(?:Hz|kW|KW|A|V(?:olt)?|year|baujahr|weight|gewicht)\b|\n|$)/im
+    /(?:matricola\s*\/\s*serial\s*number|serial(?:\s*(?:no|number|nr))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
   ]);
 
   if (/^[\d\s]+$/.test(result.model)) result.model = result.model.replace(/\s+/g,"");
   if (/^[\d\s]+$/.test(result.serialNumber)) result.serialNumber = result.serialNumber.replace(/\s+/g,"");
+
+  result.date = first(normalized, [
+    /\bDate\s*[:#.-]?\s*[\[|:_-]*\s*((?:0?[1-9]|1[0-2])\s*[\/.-]\s*\d{2,4})/i
+  ]);
+
+  result.phases = first(normalized, [
+    /\bPH\s*[:#=.-]?\s*[\[|:_-]*\s*([123])(?=\s|\]|$)/i,
+    /(?:phase|phases|fasi)\s*[:#=.-]?\s*([123])\b/i
+  ]);
 
   result.frequency = first(normalized, [
     /\bHz\s*[:=~-]?\s*((?:50|60)(?:[.,]\d+)?)(?=\s|$)/i,
@@ -151,10 +161,13 @@ function parseNameplate(text) {
   if (result.frequency && !/Hz$/i.test(result.frequency)) result.frequency += " Hz";
 
   result.power = first(normalized, [
+    /\bTotal\s*W\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
     /\bkW\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
     /\b(\d+(?:[.,]\d+)?)\s*kW\b/i
   ]);
-  if (result.power && !/kW$/i.test(result.power)) result.power += " kW";
+  if (result.power && !/(?:kW|W)$/i.test(result.power)) {
+    result.power += /\bTotal\s*W\b/i.test(normalized) ? " W" : " kW";
+  }
 
   result.current = first(normalized, [
     /(?:^|\s)A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
@@ -169,6 +182,27 @@ function parseNameplate(text) {
     /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V\b/i
   ]);
   if (result.voltage && !/V$/i.test(result.voltage)) result.voltage += " V";
+
+  result.capacity = first(normalized, [
+    /\bLt\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
+    /(?:liters?|litres?|litri)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i
+  ]);
+  if (result.capacity && !/L$/i.test(result.capacity)) result.capacity += " L";
+
+  result.heatingPower = first(normalized, [
+    /(?:Riscaldamento\s*\/\s*Heating\s*Elements?[\s\S]{0,80}?\bW\s*[:=~-]?\s*[\[|:_-]*\s*)(\d+(?:[.,]\d+)?)/i
+  ]);
+  if (result.heatingPower && !/W$/i.test(result.heatingPower)) result.heatingPower += " W";
+
+  result.airPressure = first(normalized, [
+    /(?:Pressione\s+aliment\.\s+aria\s*\/\s*Air\s+inlet\s+pressure)[\s\S]{0,60}?\bBAR\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)/i
+  ]);
+  if (result.airPressure && !/bar$/i.test(result.airPressure)) result.airPressure += " bar";
+
+  result.steamPressure = first(normalized, [
+    /(?:Pressione\s+max\s+vapore\s*\/\s*Max\s+steam\s+pressure)[\s\S]{0,60}?\bBAR\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)/i
+  ]);
+  if (result.steamPressure && !/bar$/i.test(result.steamPressure)) result.steamPressure += " bar";
 
   result.year = first(normalized, [
     /(?:baujahr\s*\/\s*year|baujahr|year|yr|año|built|date)\s*[:#.-]?\s*((?:19|20)\d{2})/i
@@ -207,8 +241,9 @@ function parseNameplate(text) {
       !/GmbH|Justus|Germany|www\.|@/i.test(line)
     );
   result.equipment = descriptionPool.find(line =>
-    /table|machine|motor|pump|dryer|washer|ironing|bügel|compressor|drive|fan|oven|boiler/i.test(line)
-  ) || descriptionPool[descriptionPool.length - 1] || "";
+    /table|machine|motor|pump|dryer|washer|ironing|bügel|compressor|drive|fan|oven/i.test(line) &&
+    !/^(?:model|modello|matricola|serial|date|hz|ph|volt|total|lt|bar)\b/i.test(line)
+  ) || "";
 
   if (!result.year) {
     result.year = first(normalized, [/\b((?:19|20)\d{2})\b/]);
