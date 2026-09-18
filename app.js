@@ -524,7 +524,8 @@ function parseNameplate(text) {
     /\b(monof[aá]sico)\b/i,
     /\b(trif[aá]sico)\b/i,
     /\b([13])\s*PH\b/i,
-    /\b([13])\s*Phase\b/i
+    /\b([13])\s*Phase\b/i,
+    /\b([13])\s*[-–]\s*Phase\b/i
   ]);
   if (/^monof/i.test(result.phases || "")) result.phases = "1";
   if (/^trif/i.test(result.phases || "")) result.phases = "3";
@@ -538,6 +539,7 @@ function parseNameplate(text) {
   if (!result.frequency && /\bH[eEz]\s*\[\s*S[O0]\s*\]/i.test(normalized)) result.frequency = "50 Hz";
 
   result.power = first(normalized, [
+    /\bPower\s+LD\/ND\/HD\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?){1,3})\s*kW\b/i,
     /(?:^|\n)\s*(?:kW|KW)[ \t]*[:=.-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)*)\b/i,
     /\bkW\.?MAX\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\bTotal\s*W\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
@@ -556,6 +558,7 @@ function parseNameplate(text) {
   if (result.apparentPower && !/kVA$/i.test(result.apparentPower)) result.apparentPower += " kVA";
 
   result.current = first(normalized, [
+    /\bAmps\s+LD\/ND\/HD\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?){1,3})\b/i,
     /\bA\.?MAX\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d{1,5}(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d{1,5}(?:[.,]\d+)?)*)[ \t]*A(?![-A-Z0-9])/i,
     /(?:current|amp(?:s|ere)?|corriente|strom)[ \t]*[:=~-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)*)[ \t]*A?\b/i,
@@ -598,6 +601,13 @@ function parseNameplate(text) {
     /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*Volt\b/i
   ]);
   if (result.voltage && !/V$/i.test(result.voltage)) result.voltage += " V";
+  if (result.voltage) {
+    const voltageValue = result.voltage.replace(/\s*V$/i, "").replace(/\s+/g, "");
+    const escapedVoltage = voltageValue.replace(/[.*+?^$(){}|\[\]\\]/g, "\\  if (result.voltage && !/V$/i.test(result.voltage)) result.voltage += " V";");
+    const matchingLines = lines.filter(line => new RegExp("\\b" + escapedVoltage + "\\s*V\\b", "i").test(line.replace(/\s+/g, "")));
+    const capacitorOnlyVoltage = matchingLines.length > 0 && matchingLines.every(line => /condensador|capacitor|condenser/i.test(line));
+    if (capacitorOnlyVoltage) result.voltage = "";
+  }
   const multiVoltages = uniqueValues([...normalized.matchAll(/\b(\d{3,4}Y?\s*\/\s*\d{3,4})\s*V\b/gi)].map(match => match[1]));
   if (multiVoltages.length > 1) result.voltage = joinRatings(multiVoltages, "V");
 
