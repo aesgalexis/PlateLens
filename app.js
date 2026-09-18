@@ -1072,7 +1072,7 @@ function parseNameplate(text) {
     if (ratedCurrent) result.current = ratedCurrent + " A";
     else if (result.current) result.current = "";
 
-    if (!/(?:^|\n)\s*(?:i\s*[:=]|ratio\b|[ÜU]bersetzung\b)/im.test(normalized)) {
+    if (!/(?:^|\n)\s*(?:ratio\b|[ÜU]bersetzung\b)/im.test(normalized)) {
       result.ratio = "";
     }
   }
