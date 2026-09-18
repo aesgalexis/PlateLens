@@ -167,10 +167,10 @@ function parseNameplate(text) {
   // Prefer values explicitly attached to labels. Industrial plates often place
   // another label/value pair on the same OCR line, so each capture is bounded.
   result.model = first(normalized, [
-    /(?:^|\n)\s*(?:modello\s*\/\s*model|model|type|typ|mod\.?|modelo|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N)\b))/im
+    /(?:^|\n)\s*(?:modello\s*\/\s*model|model|type|typ|mod\.?|modelo|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N|Part\s*(?:No|Number)|Product\s*(?:No|Number))\b))/im
   ]);
   result.serialNumber = first(normalized, [
-    /(?:matricola\s*\/\s*serial\s*number|serial(?:\s*(?:no|number|nr))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
+    /(?:matricola\s*\/\s*serial\s*number|serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
   ]);
   result.partNumber = first(normalized, [
     /(?:part\s*(?:no|number)|p\/n|product\s*(?:no|number)|code|cat\.?\s*no)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
@@ -186,7 +186,7 @@ function parseNameplate(text) {
   }
 
   result.date = first(normalized, [
-    /\bDate\s*[:#.-]?\s*[\[|:_-]*\s*((?:0?[1-9]|1[0-2])\s*[\/.-]\s*\d{2,4})/i
+    /\bDate(?:\s*\(YYMM\))?\s*[:#.-]?\s*[\[|:_-]*\s*((?:(?:0?[1-9]|1[0-2])\s*[\/.-]\s*\d{2,4}|\d{4}))/i
   ]);
 
   result.phases = first(normalized, [
@@ -195,24 +195,25 @@ function parseNameplate(text) {
   ]);
 
   result.frequency = first(normalized, [
-    /\bHz\s*[:=~-]?\s*((?:50|60)(?:[.,]\d+)?)(?=\s|$)/i,
-    /\b((?:50|60)(?:[.,]\d+)?)\s*Hz\b/i
+    /\b((?:50|60)(?:\s*\/\s*(?:50|60))?(?:[.,]\d+)?)\s*Hz\b/i,
+    /(?:^|\n)\s*Hz\s*[:=~-]?\s*((?:50|60)(?:[.,]\d+)?)(?=\s|$)/i
   ]);
   if (result.frequency && !/Hz$/i.test(result.frequency)) result.frequency += " Hz";
 
   result.power = first(normalized, [
     /\bTotal\s*W\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
-    /\bkW\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
-    /\b(\d+(?:[.,]\d+)?)\s*kW\b/i
+    /(?:total\s+input|input\s+power)\s*[:=~-]?\s*(?:kW|W|HP)?\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i,
+    /\b(\d+(?:[.,]\d+)?)\s*kW\b/i,
+    /(?:^|\n)\s*kW\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i
   ]);
   if (result.power && !/(?:kW|W)$/i.test(result.power)) {
     result.power += /\bTotal\s*W\b/i.test(normalized) ? " W" : " kW";
   }
 
   result.current = first(normalized, [
-    /(?:^|\s)A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
-    /(?:current|amp(?:s|ere)?|corriente|strom)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*A?\b/i,
-    /\b(\d+(?:[.,]\d+)?)\s*A\b/i
+    /\b(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)*)[ \t]*A(?![-A-Z0-9])/i,
+    /(?:current|amp(?:s|ere)?|corriente|strom)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\s*A?\b/i,
+    /(?:^|\n)\s*A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i
   ]);
   if (result.current && !/A$/i.test(result.current)) result.current += " A";
   if (!result.current) {
@@ -231,10 +232,15 @@ function parseNameplate(text) {
   if (multiVoltages.length > 1) result.voltage = joinRatings(multiVoltages, "V");
 
   result.capacity = first(normalized, [
+    /(?:capacity|capacit[aà])\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*(kg|L|Lt)?/i,
     /\bLt\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
     /(?:liters?|litres?|litri)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i
   ]);
-  if (result.capacity && !/L$/i.test(result.capacity)) result.capacity += " L";
+  if (result.capacity) {
+    const cap = normalized.match(/(?:capacity|capacit[aà])\s*[:=~-]?\s*\d+(?:[.,]\d+)?\s*(kg|L|Lt)?/i);
+    const capUnit = cap && cap[1] ? (/kg/i.test(cap[1]) ? "kg" : "L") : (/\bLt\b|liters?|litres?|litri/i.test(normalized) ? "L" : "");
+    if (capUnit && !new RegExp(capUnit + "$", "i").test(result.capacity)) result.capacity += " " + capUnit;
+  }
 
   result.heatingPower = first(normalized, [
     /(?:Riscaldamento\s*\/\s*Heating\s*Elements?[\s\S]{0,80}?\bW\s*[:=~-]?\s*[\[|:_-]*\s*)(\d+(?:[.,]\d+)?)/i
@@ -256,9 +262,11 @@ function parseNameplate(text) {
   ]);
 
   result.weight = first(normalized, [
-    /(?:gewicht\s*\/\s*weight|gewicht|weight|mass|peso)\s*(?:kg)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
-    /\b(\d+(?:[.,]\d+)?)\s*kg\b/i
+    /(?:gewicht\s*\/\s*weight|gewicht|weight|mass|peso)\s*(?:kg)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i
   ]);
+  if (!result.weight && !/(?:capacity|capacit[aà])\b/i.test(normalized)) {
+    result.weight = first(normalized, [/\b(\d+(?:[.,]\d+)?)\s*kg\b/i]);
+  }
   if (result.weight && !/kg$/i.test(result.weight)) result.weight += " kg";
 
   result.ratio = first(normalized, [
@@ -289,8 +297,10 @@ function parseNameplate(text) {
     if (!/(?:bar|psig)$/i.test(result.workingPressure)) result.workingPressure += " " + pressureUnit;
   }
   result.speed = first(normalized, [
-    /((?:\d{2,5})\s*(?:r\/?min|rpm|min-1|min⁻¹)\b)/i
+    /\b(\d{2,5})[ \t]*(?:r\/?min|rpm|min-1|min⁻¹|\/min)\b/i,
+    /(?:^|\n)\s*(?:RPM|r\/min|min-1|min⁻¹)\s*[:=~-]?\s*(\d{2,5})\b/i
   ]);
+  if (result.speed && !/rpm$/i.test(result.speed)) result.speed += " rpm";
   result.ipRating = first(normalized, [/(\bIP\s*\d{2}[A-Z]?\b)/i]);
   result.cosPhi = first(normalized, [
     /(?:cos\s*[φϕø]|power\s*factor|pf)\s*[:=-]?\s*(0[.,]\d{1,3})/i
@@ -332,6 +342,7 @@ function parseNameplate(text) {
     /table|machine|motor|pump|dryer|washer|ironing|bügel|compressor|drive|fan|oven/i.test(line) &&
     !/^(?:model|modello|matricola|serial|date|hz|ph|volt|total|lt|bar)\b/i.test(line)
   ) || "";
+  if (/^(?:SEW-EURODRIVE|KAESER COMPRESSORS|ABB Motors)$/i.test(result.equipment)) result.equipment = "";
 
   if (!result.year) {
     result.year = first(normalized, [/\b((?:19|20)\d{2})\b/]);
@@ -339,7 +350,7 @@ function parseNameplate(text) {
 
   const motorTable = parseMotorTable(lines);
   for (const [key, value] of Object.entries(motorTable)) {
-    if (value && !result[key]) result[key] = value;
+    if (value) result[key] = value;
   }
 
   return result;
