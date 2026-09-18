@@ -39,15 +39,15 @@ The site is intentionally static and can be published directly from the reposito
 
 ## Regression corpus
 
-The parser is checked against 153 regression cases: 50 public hand-curated nameplate formats, three noisy OCR samples from real plates, and a 100-case stress suite generated from 20 real industrial plate families. Coverage includes pumps, compressors, VFDs, industrial motors, industrial laundry equipment, gearboxes and several multi-rating electrical table layouts.
+The parser is checked against 203 automated regression cases: 50 public hand-curated nameplate formats, three noisy OCR samples from real plates, a 100-case stress suite generated from 20 real industrial plate families, and a separate corpus transcribed from 50 distinct real nameplate photographs found online. Coverage includes pumps, compressors, VFDs, industrial motors, industrial laundry equipment, gearboxes and several multi-rating electrical table layouts.
 
 Run the regression set with:
 
 ```bash
-node tests/parser.test.mjs && node tests/mega-corpus.test.mjs && node tests/presence.test.mjs && node tests/orientation.test.mjs
+node tests/parser.test.mjs && node tests/mega-corpus.test.mjs && node tests/online-50.test.mjs && node tests/presence.test.mjs && node tests/orientation.test.mjs
 ```
 
-See `docs/test-corpus.md` for the hand-curated corpus, `docs/mega-corpus.md` for the 100-case stress suite, and `docs/orientation-corpus.md` for the orientation/pose reference set.
+See `docs/test-corpus.md` for the hand-curated corpus, `docs/online-50-corpus.md` for the 50 distinct real online plates, `docs/mega-corpus.md` for the 100-case stress suite, and `docs/orientation-corpus.md` for the orientation/pose reference set.
 
 ## Roadmap
 
