@@ -483,7 +483,10 @@ function parseNameplate(text) {
     result.serialNumber = first(normalized, [/(?:19|20)\d{2}\s+(\d{5,10})\b/]);
   }
   if (result.manufacturer === "KSB") {
-    const ksbPart = first(normalized, [/\bP[-.]?\s*No\.?\s*[:#.-]?\s*([A-Z0-9]+(?:\s*\/\s*[A-Z0-9]+)?)/i]);
+    const ksbPart = first(normalized, [
+      /\bP[-.]?\s*No\.?\s*[:#.-]?\s*([A-Z0-9]+(?:\s*\/\s*[A-Z0-9]+)?)/i,
+      /\bID\s+([A-Z0-9][A-Z0-9._\/-]{5,30})\b/i
+    ]);
     if (ksbPart) result.partNumber = ksbPart;
   }
   if (result.manufacturer === "Sulzer" && !result.partNumber) {
