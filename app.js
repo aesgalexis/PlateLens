@@ -137,12 +137,12 @@ function joinRatings(values, unit) {
   return cleaned.length ? cleaned.join(" / ") + " " + unit : "";
 }
 function parseMotorTable(lines) {
-  const index = lines.findIndex(line => /\\bV\\b/i.test(line) && /\\bHz\\b/i.test(line) && /\\bkW\\b/i.test(line) && /(?:r\\/min|min-?1|rpm)/i.test(line) && /\\bA\\b/.test(line));
+  const index = lines.findIndex(line => /\bV\b/i.test(line) && /\bHz\b/i.test(line) && /\bkW\b/i.test(line) && /(?:r\/min|min-?1|rpm)/i.test(line) && /\bA\b/.test(line));
   if (index < 0) return {};
   const rows = [];
   const hasCos = /cos/i.test(lines[index]);
   for (const line of lines.slice(index + 1, index + 10)) {
-    const m = line.replace(/[Δ∆]/g, "D").match(/^(\\d{3,4}\\s*[YD]?)\\s+(50|60)\\s+(\\d+(?:[.,]\\d+)?)\\s+(\\d{3,5})\\s+(\\d+(?:[.,]\\d+)?)(?:\\s+(0[.,]\\d+))?/i);
+    const m = line.replace(/[Δ∆]/g, "D").match(/^(\d{3,4}\s*[YD]?)\s+(50|60)\s+(\d+(?:[.,]\d+)?)\s+(\d{3,5})\s+(\d+(?:[.,]\d+)?)(?:\s+(0[.,]\d+))?/i);
     if (!m) { if (rows.length) break; else continue; }
     rows.push({voltage:m[1], frequency:m[2], power:m[3], speed:m[4], current:m[5], cosPhi:hasCos ? (m[6] || "") : ""});
   }
