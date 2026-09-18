@@ -1,7 +1,7 @@
 const fields = [
   ["manufacturer","Manufacturer"],["equipment","Equipment / description"],["model","Model / type"],["serialNumber","Serial number"],["partNumber","Part / product code"],
   ["date","Date"],["phases","Phases"],["voltage","Voltage"],["frequency","Frequency"],["power","Total power"],["current","Current"],
-  ["capacity","Capacity"],["ratio","Ratio"],["flow","Flow"],["head","Head"],["workingPressure","Working pressure"],["heatingPower","Heating power"],["airPressure","Air inlet pressure"],["steamPressure","Max steam pressure"],
+  ["capacity","Capacity"],["refrigerant","Refrigerant / medium"],["ratio","Ratio"],["flow","Flow"],["head","Head"],["workingPressure","Working pressure"],["heatingPower","Heating power"],["airPressure","Air inlet pressure"],["steamPressure","Max steam pressure"],
   ["speed","Speed"],["ipRating","IP rating"],["year","Year"],["cosPhi","Power factor / cos φ"],["weight","Weight"]
 ];
 
@@ -274,7 +274,7 @@ function parseNameplate(text) {
   // Prefer values explicitly attached to labels. Industrial plates often place
   // another label/value pair on the same OCR line, so each capture is bounded.
   result.model = first(normalized, [
-    /(?:^|\n)\s*(?:modello\s*\/\s*model|model|type|typ|mod\.?|modelo|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:REV|INPUT|OUTPUT|Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N|Part\s*(?:No|Number)|Product\s*(?:No|Number))\b))/im
+    /(?:^|\n)\s*(?:modello\s*\/\s*model|model(?:\s*(?:no|number))?|type|typ|mod\.?|modelo|t\/c)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5}?)(?=\s*[\]|_-]*(?:\n|$|\s+(?:REV|INPUT|OUTPUT|Date|Hz|PH|Volt|Total|serial|matricola|fabr\.?|year|baujahr|weight|gewicht|P\/N|S\/N|Part\s*(?:No|Number)|Product\s*(?:No|Number))\b))/im
   ]);
   result.serialNumber = first(normalized, [
     /(?:matricola\s*\/\s*serial\s*number|serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.=\-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|kW|KW|A|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
@@ -405,6 +405,10 @@ function parseNameplate(text) {
   }
   if (result.weight && !/kg$/i.test(result.weight)) result.weight += " kg";
 
+  result.refrigerant = first(normalized, [
+    /(?:refrigerant|refrig\.?|medium)\s*[:=.-]?\s*(R\d{2,4}[A-Z]?|NH[₃3]|CO[₂2]|HFO[-A-Z0-9]+)\b/i,
+    /\b(R(?:22|32|134a|290|404A|407C|410A|448A|449A|452A|454[AC]|507|513A|600a))\b/i
+  ]);
   result.ratio = first(normalized, [
     /\bi\s*[:=]\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d+\s*:\s*\d+)\b/
@@ -478,8 +482,12 @@ function parseNameplate(text) {
   if (result.manufacturer === "Leroy-Somer" && !result.serialNumber) {
     result.serialNumber = first(normalized, [/(?:19|20)\d{2}\s+(\d{5,10})\b/]);
   }
-  if ((result.manufacturer === "KSB" || result.manufacturer === "Sulzer") && !result.partNumber) {
-    result.partNumber = first(normalized, [/\bP[-.]?\s*No\.?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9 .\/_-]{4,40})/i, /\bID\s+([A-Z0-9][A-Z0-9._\/-]{5,30})\b/i]);
+  if (result.manufacturer === "KSB") {
+    const ksbPart = first(normalized, [/\bP[-.]?\s*No\.?\s*[:#.-]?\s*([A-Z0-9]+(?:\s*\/\s*[A-Z0-9]+)?)/i]);
+    if (ksbPart) result.partNumber = ksbPart;
+  }
+  if (result.manufacturer === "Sulzer" && !result.partNumber) {
+    result.partNumber = first(normalized, [/\bID\s+([A-Z0-9][A-Z0-9._\/-]{5,30})\b/i]);
   }
   if (result.manufacturer === "Schneider Electric" && !result.model) {
     result.model = first(normalized, [/(?:^|\n)\s*(LXM62[A-Z0-9]+)\s*(?:\n|$)/i]);
