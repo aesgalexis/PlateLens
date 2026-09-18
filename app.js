@@ -141,16 +141,23 @@ function rotateCanvas(source, degrees, maxSide = null) {
 
 
 
-function applyOrientedPreview(degrees) {
-  if (!previewImage.naturalWidth || !previewImage.naturalHeight) return;
-  if (!degrees) {
+async function applyOrientedPreview(file, degrees) {
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+    const displayCanvas = rotateCanvas(image, degrees, 1800);
     previewImage.style.transform = "";
-    return;
+    previewImage.style.transition = "";
+    previewImage.src = displayCanvas.toDataURL("image/jpeg", 0.9);
+  } finally {
+    URL.revokeObjectURL(url);
   }
-  const displayCanvas = rotateCanvas(previewImage, degrees, 1800);
-  previewImage.style.transform = "";
-  previewImage.style.transition = "";
-  previewImage.src = displayCanvas.toDataURL("image/jpeg", 0.9);
 }
 
 function makeBinaryVariant(source) {
@@ -339,7 +346,7 @@ analyzeBtn.addEventListener("click", async () => {
       orientation.score = refined.score;
 
       const orientedImage = rotateCanvas(preparedImage, orientation.angle);
-      applyOrientedPreview(orientation.angle);
+      await applyOrientedPreview(currentFile, orientation.angle);
 
       ocrPass = 1;
       await worker.setParameters({
