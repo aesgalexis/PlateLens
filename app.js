@@ -98,6 +98,27 @@ function ocrScore(result) {
   const confidence = Number(result?.data?.confidence || 0);
   return confidence + Math.min(30, text.length / 8);
 }
+function needsLayoutRetry(text) {
+  const valueSignals = (text.match(/\b(?:Hz|kW|Volt|V|A|rpm|r\/min|min-?1|bar|psig)\b/gi) || []).length;
+  const labelSignals = (text.match(/\b(?:type|typ|model|modello|serial|matricola|fabr\.?\s*nr|year|baujahr|weight|gewicht|voltage|volt|current|power)\b/gi) || []).length;
+  return text.trim().length >= 24 && labelSignals >= 2 && valueSignals < 3;
+}
+
+function mergeOcrTexts(...texts) {
+  const seen = new Set();
+  const lines = [];
+  for (const text of texts) {
+    for (const rawLine of String(text || "").split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      const key = line.toLowerCase().replace(/\s+/g, " ");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      lines.push(line);
+    }
+  }
+  return lines.join("\n");
+}
 analyzeBtn.addEventListener("click", async () => {
   if (!currentFile) return;
   if (!window.Tesseract) {
@@ -109,32 +130,58 @@ analyzeBtn.addEventListener("click", async () => {
   progressText.textContent = "Starting OCR…";
   try {
     const preparedImage = await prepareOcrImage(currentFile);
-    let result = await Tesseract.recognize(preparedImage, "eng", {
-      logger: m => {
-        if (typeof m.progress === "number") {
-          const pct = Math.round(m.progress * 92);
-          progressBar.style.width = pct + "%";
-          progressText.textContent = `${friendlyStatus(m.status)} · ${pct}%`;
+    let ocrPass = 1;
+    let worker = null;
+    try {
+      worker = await Tesseract.createWorker("eng", 1, {
+        logger: m => {
+          if (typeof m.progress === "number") {
+            const base = ocrPass === 1 ? 0 : 86;
+            const span = ocrPass === 1 ? 84 : 12;
+            const pct = Math.min(98, base + Math.round(m.progress * span));
+            progressBar.style.width = pct + "%";
+            progressText.textContent = `${friendlyStatus(m.status)} · ${pct}%`;
+          }
+        }
+      });
+      await worker.setParameters({
+        tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+        preserve_interword_spaces: "1"
+      });
+
+      let result = await worker.recognize(preparedImage);
+      let text = (result.data.text || "").trim();
+
+      if (Number(result.data.confidence || 0) < 42 || text.length < 24) {
+        progressText.textContent = "Low OCR confidence · checking original image…";
+        const fallback = await worker.recognize(currentFile);
+        if (ocrScore(fallback) > ocrScore(result)) {
+          result = fallback;
+          text = (fallback.data.text || "").trim();
         }
       }
-    });
 
-    const firstText = (result.data.text || "").trim();
-    if (Number(result.data.confidence || 0) < 48 || firstText.length < 24) {
-      progressText.textContent = "Low OCR confidence · retrying original image…";
-      progressBar.style.width = "94%";
-      const fallback = await Tesseract.recognize(currentFile, "eng");
-      if (ocrScore(fallback) > ocrScore(result)) result = fallback;
+      if (needsLayoutRetry(text)) {
+        ocrPass = 2;
+        progressText.textContent = "Reading technical layout…";
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+          preserve_interword_spaces: "1"
+        });
+        const layoutResult = await worker.recognize(preparedImage);
+        text = mergeOcrTexts(text, layoutResult.data.text);
+      }
+
+      rawText.textContent = text || "No readable text detected.";
+      const parsed = parseNameplate(text);
+      fillForm(parsed);
+      resultsSection.hidden = false;
+      resultsSection.scrollIntoView({behavior:"smooth",block:"start"});
+      progressText.textContent = "OCR complete. Verify the extracted values.";
+      progressBar.style.width = "100%";
+    } finally {
+      if (worker) await worker.terminate();
     }
-
-    const text = result.data.text.trim();
-    rawText.textContent = text || "No readable text detected.";
-    const parsed = parseNameplate(text);
-    fillForm(parsed);
-    resultsSection.hidden = false;
-    resultsSection.scrollIntoView({behavior:"smooth",block:"start"});
-    progressText.textContent = "OCR complete. Verify the extracted values.";
-    progressBar.style.width = "100%";
   } catch (error) {
     console.error(error);
     progressText.textContent = "Analysis failed. Try a clearer or tighter photo.";
