@@ -369,7 +369,7 @@ function parseMotorTable(lines) {
   const rows = [];
   const hasCos = /cos/i.test(lines[index]);
   for (const line of lines.slice(index + 1, index + 10)) {
-    const m = line.replace(/[Δ∆]/g, "D").match(/^(\d{3,4}\s*[YD]?)\s+(50|60)\s+(\d+(?:[.,]\d+)?)\s+(\d{3,5})\s+(\d+(?:[.,]\d+)?)(?:\s+(0[.,]\d+))?/i);
+    const m = line.replace(/[Δ∆]/g, "D").match(/^(?:[DY]\s+)?(\d{3,4}\s*[YD]?)\s+(50|60)\s+(\d+(?:[.,]\d+)?)\s+(\d{3,5})\s+(\d+(?:[.,]\d+)?)(?:\s+(0[.,]\d+))?/i);
     if (!m) { if (rows.length) break; else continue; }
     rows.push({voltage:m[1], frequency:m[2], power:m[3], speed:m[4], current:m[5], cosPhi:hasCos ? (m[6] || "") : ""});
   }
@@ -400,7 +400,7 @@ function parseNameplate(text) {
     /(?:matricola\s*\/\s*serial\s*number|n[°º]?\s*de\s*serie|works\s*n[°º]?|serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.=\-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|kW|KW|A|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
   ]);
   result.partNumber = first(normalized, [
-    /(?:part\s*(?:no|number)|p\/n|p(?:\/|-|\.)?\s*no\.?|product\s*(?:no|number)|cod\.?|code|cat\.?\s*no)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
+    /(?:part\s*(?:no|number)|p\/n|p(?:\/|-|\.)?\s*no\.?|product\s*(?:no|number)|article\s*no\.?|cod\.?|code|cat\.?\s*no(?:\.\/part\s*no\.?)?)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
   ]);
   result.orderNumber = first(normalized, [
     /(?:work\s+order|order|o\/n)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
@@ -421,7 +421,7 @@ function parseNameplate(text) {
   }
 
   result.date = first(normalized, [
-    /\bDate(?:\s*\(YYMM\))?\s*[:#.-]?\s*[\[|:_-]*\s*((?:(?:0?[1-9]|1[0-2])\s*[\/.-]\s*\d{2,4}|\d{4}|(?:19|20)\d{2}[.-]\d{1,2}[.-]\d{1,2}))/i,
+    /\bDate(?:\s*\(YYMM\))?\s*[:#.-]?\s*[\[|:_-]*\s*((?:(?:0?[1-9]|1[0-2])\s*[\/.-]\s*\d{2,4}|(?:19|20)\d{2}[.-]\d{1,2}(?:[.-]\d{1,2})?|\d{4}))/i,
     /(?:^|\n)\s*((?:19|20)\d{2}[.-]\d{1,2}[.-]\d{1,2})\s*(?:\n|$)/i,
     /(?:^|\n)\s*(\d{1,2}\.\d{1,2}\.(?:19|20)\d{2})\s*(?:\n|$)/i,
     /\bProd\.?\s*((?:\d{1,2})\s*\/\s*(?:19|20)\d{2})\b/i
@@ -432,19 +432,22 @@ function parseNameplate(text) {
     /(?:phase|phases|fasi)\s*[:#=.-]?\s*([123])\b/i,
     /\b(monof[aá]sico)\b/i,
     /\b(trif[aá]sico)\b/i,
-    /\b([13])\s*PH\b/i
+    /\b([13])\s*PH\b/i,
+    /\b([13])\s*Phase\b/i
   ]);
   if (/^monof/i.test(result.phases || "")) result.phases = "1";
   if (/^trif/i.test(result.phases || "")) result.phases = "3";
 
   result.frequency = first(normalized, [
     /\b((?:50|60)(?:\s*\/\s*(?:50|60))?(?:[.,]\d+)?)\s*Hz\b/i,
-    /\bHz\s*[:=~-]?\s*((?:50|60)(?:[.,]\d+)?)(?=\s|$)/i
+    /\b(\d{2,3}\s*[-–]\s*\d{2,3})\s*Hz\b/i,
+    /\b(?:Hz|F\s*\(\s*Hz\s*\))\s*[:=~-]?\s*((?:50|60)(?:\s*\/\s*(?:50|60))?)(?=\s|$)/i
   ]);
   if (result.frequency && !/Hz$/i.test(result.frequency)) result.frequency += " Hz";
   if (!result.frequency && /\bH[eEz]\s*\[\s*S[O0]\s*\]/i.test(normalized)) result.frequency = "50 Hz";
 
   result.power = first(normalized, [
+    /(?:kW|KW)\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\b/i,
     /\bkW\.?MAX\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\bTotal\s*W\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
     /(?:total\s+input|input\s+power)\s*[:=~-]?\s*(?:kW|W|HP)?\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i,
@@ -452,7 +455,7 @@ function parseNameplate(text) {
     /(?:^|\n)\s*kW\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
     /\bkW\s*[:=~-]?\s*(\d{1,6}(?:[.,]\d+)?)(?=\s|$)/i
   ]);
-  if (result.power && !/(?:kW|W)$/i.test(result.power)) {
+  if (result.power && !/(?:kW|W|HP)$/i.test(result.power)) {
     result.power += /\bTotal\s*W\b/i.test(normalized) ? " W" : " kW";
   }
   result.apparentPower = first(normalized, [
@@ -465,6 +468,8 @@ function parseNameplate(text) {
     /\bA\.?MAX\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d{1,5}(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d{1,5}(?:[.,]\d+)?)*)[ \t]*A(?![-A-Z0-9])/i,
     /(?:current|amp(?:s|ere)?|corriente|strom)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\s*A?\b/i,
+    /(?:F\.\s*L\.\s*A\.?|FLAMPS|AMPS?|I\s*\(\s*A\s*\))\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?){0,3})\b/i,
+    /\b(\d+(?:[.,]\d+)?)\s*Amps?\b/i,
     /\b(\d+(?:[.,]\d+)?)\s*amper(?:e|ios?)?\b/i,
     /(?:^|\n)\s*A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
     /(?:baujahr\s*\/\s*year|baujahr|year)\s*[:#.-]?\s*(?:19|20)?\d{2}\s+A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i
@@ -488,6 +493,8 @@ function parseNameplate(text) {
   }
 
   result.voltage = first(normalized, [
+    /(?:VOLTS?|V\.|U\s*\(\s*V\s*\))\s*[:=.-]?\s*((?:\d{2,4}(?:\s*[-\/]\s*\d{2,4})?)(?:\s*\/\s*\d{2,4}(?:\s*[-\/]\s*\d{2,4})?)*)/i,
+    /\b3AC\s*(\d{2,4}\s*[-–]\s*\d{2,4})\s*V?/i,
     /\b(\d{3,4}(?:\s*[\/-]\s*\d{3,4})?)\s*Volt\b/i,
     /(?:Input\s+(?:a\.c\.\/d\.c\.|ac\/dc|ac|a\.c\.)|INPUT\s*:)[^\n]{0,24}?((?:\d{2,4}(?:\s*[-\/]\s*\d{2,4})?))\s*V(?:ac|dc)?\b/i,
     /\bVolt\s*[~=:.-]*\s*[\[|:_-]*\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)(?=\s|\]|$)/i,
@@ -585,6 +592,7 @@ function parseNameplate(text) {
     if (!/(?:bar|psig)$/i.test(result.workingPressure)) result.workingPressure += " " + pressureUnit;
   }
   result.speed = first(normalized, [
+    /(?:R\.\s*P\.\s*M\.?|RPM|FLRPM|F\.\s*L\.\s*RPM)\s*[:=.-]?\s*(\d{2,5}(?:\s*\/\s*\d{2,5}){0,3})\b/i,
     /\bINPUT\s+RPM\s*[:=.-]?\s*(\d{2,5})\b/i,
     /\bn\s*max\s*[:=.-]?\s*(\d{2,5})\s*(?:U\/min|1\/min|r\/?min|rpm)\b/i,
     /\b(\d{2,5}\s*[-–]\s*\d{2,5})[ \t]*(?:r\/?min|rpm|min-1|min⁻¹|\/min)\b/i,
@@ -630,7 +638,14 @@ function parseNameplate(text) {
     ["Busch", /\bBUSCH\b/i],
     ["Ingersoll Rand", /\bINGERSOLL[\s-]*RAND\b/i],
     ["Falk", /\bFALK\b/i],
-    ["Sullair", /\bSULLAIR\b/i]
+    ["Sullair", /\bSULLAIR\b/i],
+    ["Baldor-Reliance", /\bBALDOR[\s•-]*RELIANCE\b/i],
+    ["Leeson", /\bLEESON\b/i],
+    ["Brook Crompton", /\bBROOK\s+CROMPTON\b/i],
+    ["Marathon", /\bMARATHON(?:\s+ELECTRIC)?\b/i],
+    ["Toshiba", /\bTOSHIBA\b/i],
+    ["Mitsubishi Electric", /\bMITSUBISHI\s+ELECTRIC\b/i],
+    ["Allen-Bradley", /\bAllen[\s-]*Bradley\b/i]
   ];
   const knownBrand = knownBrands.find(entry => entry[1].test(normalized));
   result.manufacturer = knownBrand ? knownBrand[0] : first(normalized, [
@@ -684,6 +699,21 @@ function parseNameplate(text) {
   if (result.manufacturer === "Falk" && !result.capacity) {
     const gals = first(normalized, [/(?:APPROX\.\s*)?U\.S\.\s*GALS\.\s*(\d+(?:[.,]\d+)?)/i]);
     if (gals) result.capacity = gals + " US gal";
+  }
+  if (result.manufacturer === "ABB" && !result.model) {
+    result.model = first(normalized, [/(?:^|\n)\s*(ACS\d{3,4}-[A-Z0-9+._\/-]+)\s*(?:\n|$)/i]);
+  }
+  if (result.manufacturer === "Schneider Electric" && !result.model) {
+    result.model = first(normalized, [/(?:^|\n)\s*(ATV\d{3}[A-Z0-9._\/-]+)\s*(?:\n|$)/i, /(?:^|\n)\s*(LXM62[A-Z0-9]+)\s*(?:\n|$)/i]);
+  }
+  if (result.manufacturer === "Mitsubishi Electric" && !result.model) {
+    result.model = first(normalized, [/(?:^|\n)\s*(FR-[A-Z]\d{3}-[A-Z0-9._\/-]+)\s*(?:\n|$)/i]);
+  }
+  if (result.manufacturer === "Siemens" && !result.model) {
+    result.model = first(normalized, [/(?:POWER\s+MODULE\s+)?(PM\d{3}-\d)\b/i, /(?:^|\n)\s*(6SL\d[A-Z0-9._\/-]+)\s*(?:\n|$)/i]);
+  }
+  if (result.manufacturer === "Allen-Bradley" && !result.model) {
+    result.model = first(normalized, [/(PowerFlex\s+\d{3})\b/i]);
   }
   if (result.manufacturer === "Alfa Laval" && !result.orderNumber) {
     result.orderNumber = first(normalized, [/\bOrder\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{3,30})/i]);
