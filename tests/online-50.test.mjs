@@ -154,7 +154,7 @@ const plates = [
   {
     name: 'Siemens 1LA7083 motor',
     text: 'SIEMENS\n3~ Mot 1LA7083-2AA10\n50 Hz 230/400 D/Y V 1.1 kW 4.2/2.40 A cos 0.87 2845/min\n60 Hz 460 Y V 1.3 kW 2.4 A cos 0.88 3435/min\nIP55',
-    expected: {manufacturer:'Siemens', model:'1LA7083-2AA10', frequency:'50 Hz', power:'1.1 kW', current:'4.2/2.40 A', speed:'2845 rpm', ipRating:'IP55'}
+    expected: {manufacturer:'Siemens', model:'1LA7083-2AA10', frequency:'50 / 60 Hz', power:'1.1 kW', current:'4.2/2.40 A', speed:'2845 rpm', ipRating:'IP55'}
   },
   {
     name: 'ABB M3AA112MB4 motor',
