@@ -1,5 +1,5 @@
 const fields = [
-  ["manufacturer","Manufacturer"],["equipment","Equipment / description"],["model","Model / type"],["serialNumber","Serial number"],["partNumber","Part / product code"],
+  ["manufacturer","Manufacturer"],["equipment","Equipment / description"],["model","Model / type"],["serialNumber","Serial number"],["partNumber","Part / product code"],["orderNumber","Order / work order"],
   ["date","Date"],["phases","Phases"],["voltage","Voltage"],["frequency","Frequency"],["power","Total power"],["apparentPower","Apparent power"],["current","Current"],
   ["capacity","Capacity"],["refrigerant","Refrigerant / medium"],["ratio","Ratio"],["flow","Flow"],["head","Head"],["workingPressure","Working pressure"],["heatingPower","Heating power"],["airPressure","Air inlet pressure"],["steamPressure","Max steam pressure"],
   ["speed","Speed"],["ipRating","IP rating"],["year","Year"],["cosPhi","Power factor / cos φ"],["weight","Weight"]
@@ -374,7 +374,10 @@ function parseNameplate(text) {
     /(?:matricola\s*\/\s*serial\s*number|n[°º]?\s*de\s*serie|works\s*n[°º]?|serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\/?n|ser\.?\s*no\.?|n[º°]\s*serie|fabr\.?\s*nr\.?)\s*[:#.=\-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9._\/-]{2,30})(?=\s*[\]|_-]*(?:\n|$|\s+(?:Date|Hz|kW|KW|A|PH|Volt|Total|year|baujahr|weight|gewicht)\b))/im
   ]);
   result.partNumber = first(normalized, [
-    /(?:part\s*(?:no|number)|p\/n|p(?:\/|-|\.)?\s*no\.?|product\s*(?:no|number)|order|o\/n|cod\.?|code|cat\.?\s*no)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
+    /(?:part\s*(?:no|number)|p\/n|p(?:\/|-|\.)?\s*no\.?|product\s*(?:no|number)|cod\.?|code|cat\.?\s*no)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
+  ]);
+  result.orderNumber = first(normalized, [
+    /(?:work\s+order|order|o\/n)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
   ]);
 
   if (/^[\d\s]+$/.test(result.model)) result.model = result.model.replace(/\s+/g,"");
@@ -416,6 +419,7 @@ function parseNameplate(text) {
   if (!result.frequency && /\bH[eEz]\s*\[\s*S[O0]\s*\]/i.test(normalized)) result.frequency = "50 Hz";
 
   result.power = first(normalized, [
+    /\bkW\.?MAX\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\bTotal\s*W\s*[:=~-]?\s*[\[|:_-]*\s*(\d+(?:[.,]\d+)?)(?=\s|\]|$)/i,
     /(?:total\s+input|input\s+power)\s*[:=~-]?\s*(?:kW|W|HP)?\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d{1,6}(?:[.,]\d+)?)\s*kW\b/i,
@@ -432,6 +436,7 @@ function parseNameplate(text) {
   if (result.apparentPower && !/kVA$/i.test(result.apparentPower)) result.apparentPower += " kVA";
 
   result.current = first(normalized, [
+    /\bA\.?MAX\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d{1,5}(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d{1,5}(?:[.,]\d+)?)*)[ \t]*A(?![-A-Z0-9])/i,
     /(?:current|amp(?:s|ere)?|corriente|strom)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\s*A?\b/i,
     /\b(\d+(?:[.,]\d+)?)\s*amper(?:e|ios?)?\b/i,
@@ -640,7 +645,7 @@ function parseNameplate(text) {
 
   if (result.manufacturer === "Trane") {
     if (!result.model) result.model = first(normalized, [/MODELO\s*\n\s*([A-Z0-9][A-Z0-9._\/-]{8,60})/i, /MODEL\s*\n\s*([A-Z0-9][A-Z0-9._\/-]{8,60})/i]);
-    if (!result.serialNumber) result.serialNumber = first(normalized, [/SERIAL\s*N[°º]?\s*([A-Z0-9]+(?:\s+[A-Z0-9]+){0,2})/i]);
+    result.serialNumber = first(normalized, [/SERIAL\s*N[°º]?\s*([A-Z0-9]+(?:\s+\d+)?)(?=\s+(?:ANNEE|YEAR|BAUJAHR)|\n|$)/i]) || result.serialNumber;
   }
   if (result.manufacturer === "Parker" && !result.serialNumber) {
     result.serialNumber = first(normalized, [/Typ\s+[A-Z0-9._\/-]+\s*\n\s*([A-Z0-9]+\/[A-Z0-9]+)/i]);
@@ -654,6 +659,10 @@ function parseNameplate(text) {
     const gals = first(normalized, [/(?:APPROX\.\s*)?U\.S\.\s*GALS\.\s*(\d+(?:[.,]\d+)?)/i]);
     if (gals) result.capacity = gals + " US gal";
   }
+  if (result.manufacturer === "Alfa Laval" && !result.orderNumber) {
+    result.orderNumber = first(normalized, [/\bOrder\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{3,30})/i]);
+  }
+
   // Description normally sits above the technical key/value rows.
   const technicalStart = lines.findIndex(line =>
     /^(?:model|type|typ|fabr\.?\s*nr|serial|baujahr|year|gewicht|weight|hz|kw|volt|voltage|current|strom)\b/i.test(line)
