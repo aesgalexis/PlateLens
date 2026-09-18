@@ -68,6 +68,36 @@ function reset() {
   recordForm.reset();
 }
 
+async function prepareOcrImage(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+    const longest = Math.max(image.naturalWidth, image.naturalHeight);
+    const scale = longest < 1600 ? 1600 / longest : (longest > 2400 ? 2400 / longest : 1);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const ctx = canvas.getContext("2d", {willReadFrequently:false});
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    if ("filter" in ctx) ctx.filter = "grayscale(1) contrast(1.28)";
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function ocrScore(result) {
+  const text = (result?.data?.text || "").trim();
+  const confidence = Number(result?.data?.confidence || 0);
+  return confidence + Math.min(30, text.length / 8);
+}
 analyzeBtn.addEventListener("click", async () => {
   if (!currentFile) return;
   if (!window.Tesseract) {
@@ -78,15 +108,25 @@ analyzeBtn.addEventListener("click", async () => {
   analyzeBtn.disabled = true;
   progressText.textContent = "Starting OCR…";
   try {
-    const result = await Tesseract.recognize(currentFile, "eng", {
+    const preparedImage = await prepareOcrImage(currentFile);
+    let result = await Tesseract.recognize(preparedImage, "eng", {
       logger: m => {
         if (typeof m.progress === "number") {
-          const pct = Math.round(m.progress * 100);
+          const pct = Math.round(m.progress * 92);
           progressBar.style.width = pct + "%";
           progressText.textContent = `${friendlyStatus(m.status)} · ${pct}%`;
         }
       }
     });
+
+    const firstText = (result.data.text || "").trim();
+    if (Number(result.data.confidence || 0) < 48 || firstText.length < 24) {
+      progressText.textContent = "Low OCR confidence · retrying original image…";
+      progressBar.style.width = "94%";
+      const fallback = await Tesseract.recognize(currentFile, "eng");
+      if (ocrScore(fallback) > ocrScore(result)) result = fallback;
+    }
+
     const text = result.data.text.trim();
     rawText.textContent = text || "No readable text detected.";
     const parsed = parseNameplate(text);
