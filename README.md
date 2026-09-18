@@ -15,7 +15,7 @@ PlateLens is a small browser-based tool for technicians, maintainers and anyone 
 - Incomplete reads can trigger a second pass over the central technical region and an alternate page-segmentation pass.
 - The image is not uploaded by PlateLens.
 - Common fields are detected automatically: manufacturer, equipment, model, serial/part/order number, date/year, phases, voltage, frequency, real/apparent power, current, speed, IP rating, weight, capacity, refrigerant/medium, ratio, flow/head and pressure.
-- Detected data is presented as an editable form; empty fields stay hidden by default and can be revealed when manual completion is needed.
+- Detected data is presented as an editable form; fields that are not present stay hidden, while labels detected with unreadable values remain visible as empty review fields. All empty fields can still be revealed manually.
 - Copy the result as plain text or JSON, or download a JSON record.
 - Raw OCR text remains visible for verification.
 
@@ -39,15 +39,15 @@ The site is intentionally static and can be published directly from the reposito
 
 ## Regression corpus
 
-The parser is checked against 53 regression fixtures: 50 public real-world nameplate formats plus three noisy OCR samples from real plates. Coverage includes pumps, compressors, VFDs, industrial motors, industrial laundry equipment, gearboxes and several multi-rating electrical table layouts.
+The parser is checked against 153 regression cases: 50 public hand-curated nameplate formats, three noisy OCR samples from real plates, and a 100-case stress suite generated from 20 real industrial plate families. Coverage includes pumps, compressors, VFDs, industrial motors, industrial laundry equipment, gearboxes and several multi-rating electrical table layouts.
 
 Run the regression set with:
 
 ```bash
-node tests/parser.test.mjs && node tests/orientation.test.mjs
+node tests/parser.test.mjs && node tests/mega-corpus.test.mjs && node tests/presence.test.mjs && node tests/orientation.test.mjs
 ```
 
-See `docs/test-corpus.md` for parser coverage and `docs/orientation-corpus.md` for the orientation/pose reference set.
+See `docs/test-corpus.md` for the hand-curated corpus, `docs/mega-corpus.md` for the 100-case stress suite, and `docs/orientation-corpus.md` for the orientation/pose reference set.
 
 ## Roadmap
 
