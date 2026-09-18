@@ -96,18 +96,20 @@ async function prepareOcrImage(file) {
 
 function rotateCanvas(source, degrees, maxSide = null) {
   const angle = ((degrees % 360) + 360) % 360;
-  const swap = angle === 90 || angle === 270;
-  const naturalWidth = swap ? source.height : source.width;
-  const naturalHeight = swap ? source.width : source.height;
-  const scale = maxSide ? Math.min(1, maxSide / Math.max(naturalWidth, naturalHeight)) : 1;
+  const radians = angle * Math.PI / 180;
+  const cos = Math.abs(Math.cos(radians));
+  const sin = Math.abs(Math.sin(radians));
+  const boundWidth = source.width * cos + source.height * sin;
+  const boundHeight = source.width * sin + source.height * cos;
+  const scale = maxSide ? Math.min(1, maxSide / Math.max(boundWidth, boundHeight)) : 1;
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(naturalWidth * scale));
-  canvas.height = Math.max(1, Math.round(naturalHeight * scale));
+  canvas.width = Math.max(1, Math.round(boundWidth * scale));
+  canvas.height = Math.max(1, Math.round(boundHeight * scale));
   const ctx = canvas.getContext("2d", {willReadFrequently:false});
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.translate(canvas.width / 2, canvas.height / 2);
-  ctx.rotate(angle * Math.PI / 180);
+  ctx.rotate(radians);
   const drawWidth = source.width * scale;
   const drawHeight = source.height * scale;
   ctx.drawImage(source, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
@@ -398,8 +400,12 @@ function parseNameplate(text) {
 
   result.phases = first(normalized, [
     /\bPH\s*[:#=.-]?\s*[\[|:_-]*\s*([123])(?=\s|\]|$)/i,
-    /(?:phase|phases|fasi)\s*[:#=.-]?\s*([123])\b/i
+    /(?:phase|phases|fasi)\s*[:#=.-]?\s*([123])\b/i,
+    /\b(monof[aá]sico)\b/i,
+    /\b(trif[aá]sico)\b/i
   ]);
+  if (/^monof/i.test(result.phases || "")) result.phases = "1";
+  if (/^trif/i.test(result.phases || "")) result.phases = "3";
 
   result.frequency = first(normalized, [
     /\b((?:50|60)(?:\s*\/\s*(?:50|60))?(?:[.,]\d+)?)\s*Hz\b/i,
@@ -445,6 +451,7 @@ function parseNameplate(text) {
   }
 
   result.voltage = first(normalized, [
+    /\b(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*Volt\b/i,
     /(?:Input\s+(?:a\.c\.\/d\.c\.|ac\/dc|ac|a\.c\.)|INPUT\s*:)[^\n]{0,24}?((?:\d{2,4}(?:\s*[-\/]\s*\d{2,4})?))\s*V(?:ac|dc)?\b/i,
     /\bVolt\s*[~=:.-]*\s*[\[|:_-]*\s*(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)(?=\s|\]|$)/i,
     /\bIN\s*:\s*(3x\d{2,4}\s*[-/]\s*\d{2,4})\s*V/i,
