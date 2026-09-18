@@ -824,7 +824,7 @@ function parseNameplate(text) {
     /\b(R(?:22|32|134a|290|404A|407C|410A|448A|449A|452A|454[AC]|507|513A|600a))\b/i
   ]);
   result.ratio = first(normalized, [
-    /(?:^|\n)\s*i\s*[:=]\s*(\d+(?:[.,]\d+)?)/im,
+    /\bi\s*[:=]\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d+\s*:\s*\d+)\b/
   ]);
 
