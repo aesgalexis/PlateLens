@@ -39,7 +39,7 @@ The site is intentionally static and can be published directly from the reposito
 
 ## Regression corpus
 
-The parser is checked against 32 regression fixtures: 30 public real-world nameplate formats plus two noisy OCR samples from real plates. Coverage includes pumps, compressors, drives, industrial laundry equipment, gearboxes and several motor rating-table layouts.
+The parser is checked against 42 regression fixtures: 40 public real-world nameplate formats plus two noisy OCR samples from real plates. Coverage includes pumps, compressors, VFDs, industrial motors, industrial laundry equipment, gearboxes and several multi-rating electrical table layouts.
 
 Run the regression set with:
 
