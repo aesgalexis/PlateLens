@@ -79,3 +79,27 @@ The automated parser suite also includes two noisy OCR snapshots from real VEIT 
     Source: https://www.slevysurplus.com/surplus-equipment/gearboxes-speed-reducers/gearboxes-speed-reducers-power-transmission/107859-falk-enclosed-gear-drive-1511-ratio-rk1070f3a
 30. Sullair 1509EV AC compressor — work order/BOM, model, serial, PSI/bar, CFM/m³/min, RPM, VOLTS, Hz, PH and BHP/kW on a dense mixed-units plate.
     Source: https://www.bidspotter.com/en-us/auction-catalogues/new-mill-capital/catalogue-id-bscnew10491/lot-fdbc3ecf-18bc-4b93-848f-b3d20111960c
+
+
+## Fourth public corpus — motors and VFDs
+
+31. Baldor-Reliance Severe Duty XT motor — CAT. NO., SPEC., NEMA VOLTS, F.L. AMPS, R.P.M., HZ, service factor and efficiency.
+    Source: https://www.baldor.com/mvc/DownloadCenter/Files/9AKK108388
+32. Leeson C145 motor — CAT. NO./PART NO., MODEL, dual voltage rows, R.P.M., H.P., F.L.A., HZ, phase and insulation data.
+    Source: https://esrmotors.com/Literature/Leeson/Manuals/BasicTrainingManual2_08.pdf
+33. Brook Crompton Series 30 motor — TYPE/P-No/No/YR plus multi-row Δ/Y voltage, Hz, kW, r/min, A and cosφ table.
+    Source: https://brookcrompton.com/ukanditaly/wp-content/uploads/2023/07/2022-05_Series_30_Cat_iss1-2.pdf
+34. Marathon R508A motor — NEMA/IEC dual-rating format with HP/kW, voltage pairs, 50/60 Hz, current pairs, speed, SF and IP.
+    Source: https://marathon-motors.com/r508a-100-hp-1200-rpm-315s-fr-230-460-vac-3-ph-tefc-rigid-base-globetrotter-iec-frame-motor-tca0753ae211gaa009/
+35. Toshiba EQP Global 840 motor — MODEL, HP/kW, frame, VOLTS, FLAMPS, frequency, phase, FLRPM, IP and efficiency.
+    Source: https://www.toshiba.com/tic/motors-drives/low-voltage-motors/general-purpose-motors/eqp-global-motor-series/eqp-global-840/0104XSSB41A-P
+36. ABB ACS580 drive — type designation, frame, IP, input/output voltage/current/frequency and S/N.
+    Source: https://library.e.abb.com/public/16c1a57244ef499b8e9a1895982771ac/ACS580_01drivesHW_revC_screen_A5.pdf
+37. Schneider Electric Altivar ATV320 drive — catalog reference, kW/HP, U(V), F(Hz), I(A), IP and serial-number format.
+    Source: https://download.schneider-electric.com/files?filename=User+guide&p_Doc_Ref=NVE41289
+38. Mitsubishi Electric FR-A800 drive — MODEL, INPUT, OUTPUT, SERIAL and DATE rating-plate layout.
+    Source: https://dl.mitsubishielectric.com/dl/fa/document/manual/inv/ib0600529eng/ib0600529engd.pdf
+39. Siemens SINAMICS G120 PM240-2 — Article No., 3AC voltage range, 47–63 Hz, overload kW ratings and IP20.
+    Source: https://mall.industry.siemens.com/mall/ES/ES/Catalog/Product/?mlfb=6SL3210-1PE24-5UL0
+40. Allen-Bradley PowerFlex 525 — Cat. No., 380…480 V, phase, amps, HP/kW, frame and IP/open-type format.
+    Source: https://www.rockwellautomation.com/en-us/products/details.25B-D010N104.html
