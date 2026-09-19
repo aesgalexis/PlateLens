@@ -130,12 +130,23 @@ async function prepareOcrImage(file) {
     const ctx = canvas.getContext("2d", {willReadFrequently:false});
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    if ("filter" in ctx) ctx.filter = "grayscale(1) contrast(1.28)";
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
     return canvas;
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+function makeGrayVariant(source) {
+  const canvas = document.createElement("canvas");
+  canvas.width = source.width;
+  canvas.height = source.height;
+  const ctx = canvas.getContext("2d", {willReadFrequently:false});
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  if ("filter" in ctx) ctx.filter = "grayscale(1) contrast(1.28)";
+  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+  return canvas;
 }
 
 function rotateCanvas(source, degrees, maxSide = null) {
@@ -338,11 +349,27 @@ function needsLayoutRetry(text) {
   return coverage.fragmentation > 0.22 || (coverage.technicalCount < 5 && coverage.fieldCount < 10);
 }
 
+function ocrTextQuality(text) {
+  const source = String(text || "").trim();
+  if (!source) return -999;
+  const coverage = extractionCoverage(source);
+  return coverage.technicalCount * 24
+    + coverage.identityCount * 18
+    + coverage.fieldCount * 5
+    + coverage.unitSignals * 4
+    + Math.min(24, coverage.lineCount)
+    - coverage.fragmentation * 90;
+}
+
 function mergeOcrTexts(...texts) {
+  const ranked = texts
+    .map(text => String(text || "").trim())
+    .filter(Boolean)
+    .sort((a, b) => ocrTextQuality(b) - ocrTextQuality(a));
   const seen = new Set();
   const lines = [];
-  for (const text of texts) {
-    for (const rawLine of String(text || "").split(/\r?\n/)) {
+  for (const text of ranked) {
+    for (const rawLine of text.split(/\r?\n/)) {
       const line = rawLine.trim();
       if (!line) continue;
       const key = line.toLowerCase().replace(/\s+/g, " ");
@@ -388,11 +415,11 @@ analyzeBtn.addEventListener("click", async () => {
       });
       ocrPass = 0;
       progressText.textContent = "Detecting plate orientation…";
-      let orientation = await detectBestOrientation(worker, preparedImage, (index, angle) => {
+      let orientation = await detectBestOrientation(worker, orientationImage, (index, angle) => {
         orientationProbe = index;
         progressText.textContent = "Checking orientation " + angle + "°…";
       });
-      const refined = await refineSkewOrientation(worker, preparedImage, orientation.angle, orientation.score, (index, angle) => {
+      const refined = await refineSkewOrientation(worker, orientationImage, orientation.angle, orientation.score, (index, angle) => {
         orientationProbe = index;
         progressText.textContent = "Checking tilt " + Math.round(angle) + "°…";
       });
@@ -449,7 +476,26 @@ analyzeBtn.addEventListener("click", async () => {
       }
 
       if (needsSparseRetry(text)) {
-        ocrPass = 2;
+        ocrPass = 4;
+        progressText.textContent = "Reading sparse plate body…";
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+          preserve_interword_spaces: "1"
+        });
+        const bodySparseResult = await worker.recognize(orientedImage, {rectangle: plateBody});
+        text = mergeOcrTexts(text, bodySparseResult.data.text);
+      }
+
+      if (needsSparseRetry(text)) {
+        ocrPass = 5;
+        progressText.textContent = "Reading grayscale plate body…";
+        const grayBody = makeGrayVariant(cropCanvas(orientedImage, plateBody));
+        const grayBodyResult = await worker.recognize(grayBody);
+        text = mergeOcrTexts(text, grayBodyResult.data.text);
+      }
+
+      if (needsSparseRetry(text)) {
+        ocrPass = 6;
         progressText.textContent = "Recovering sparse technical text…";
         await worker.setParameters({
           tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
