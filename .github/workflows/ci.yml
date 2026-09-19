@@ -21,4 +21,4 @@ jobs:
           node-version: "22"
 
       - name: Run parser regression corpus
-        run: node tests/parser.test.mjs && node tests/mega-corpus.test.mjs && node tests/online-50.test.mjs && node tests/presence.test.mjs && node tests/orientation.test.mjs
+        run: node tests/parser.test.mjs && node tests/mega-corpus.test.mjs && node tests/online-50.test.mjs && node tests/presence.test.mjs && node tests/runtime-wiring.test.mjs && node tests/orientation.test.mjs
