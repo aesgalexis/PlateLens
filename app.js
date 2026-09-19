@@ -391,6 +391,7 @@ analyzeBtn.addEventListener("click", async () => {
   progressText.textContent = "Starting OCR…";
   try {
     const preparedImage = await prepareOcrImage(currentFile);
+    const orientationImage = makeGrayVariant(preparedImage);
     let ocrPass = 1;
     let orientationProbe = 0;
     let worker = null;
