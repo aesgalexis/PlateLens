@@ -1036,6 +1036,10 @@ function parseNameplate(text) {
   result.manufacturer = knownBrand ? knownBrand[0] : first(normalized, [
     /\b([A-Z][A-Za-z0-9&. -]{1,35}?(?:GmbH(?:\s*&\s*Co\.?)?|AG|Ltd\.?|S\.?A\.?|S\.?r\.?l\.?|Inc\.?|Corp\.?))(?=,|\n|$)/i
   ]);
+  const isPharmaggFamily =
+    /\bPHARMAGG\b/i.test(normalized) ||
+    (/\bKannegiesser\b/i.test(normalized) && /\b(?:Hoya|Systemtechnik|SYSTEMTECHNIK)\b/i.test(normalized));
+  if (isPharmaggFamily) result.manufacturer = "PHARMAGG";
   if (result.manufacturer === "Leroy-Somer" && !result.serialNumber) {
     result.serialNumber = first(normalized, [/(?:19|20)\d{2}\s+([A-Z]?\d{5,10})\b/i]);
   }
@@ -1133,12 +1137,13 @@ function parseNameplate(text) {
     if (result.head) result.head += " m";
   }
 
-  if (result.manufacturer === "PHARMAGG") {
+  if (isPharmaggFamily) {
     const pharmaModel = first(normalized, [
       /\b(FU\s*\d{3,5})\b/i,
-      /(?:^|\n)\s*Typ\s*[:=.-]?\s*(FU\s*\d{3,5})\b/im
+      /(?:^|\n)\s*Typ\s*[:=.-]?\s*(FU\s*\d{3,5})\b/im,
+      /\bFU\s*1\s*400\b/i
     ]);
-    if (pharmaModel) result.model = pharmaModel.replace(/\s+/g, "");
+    result.model = pharmaModel ? pharmaModel.replace(/\s+/g, "") : "";
 
     const pharmaSerial = first(normalized, [
       /Fabr\.?\s*Nr\.?\s*[:=.-]?\s*(\d{8,14})\b/i,
@@ -1155,6 +1160,16 @@ function parseNameplate(text) {
     if (!/(?:^|\n)\s*(?:ratio\b|[ÜU]bersetzung\b)/im.test(normalized)) {
       result.ratio = "";
     }
+
+    const pharmaHeating = first(normalized, [
+      /Beheizungsart\s*[:=.-]?\s*(Dampf|Steam|Gas|Elektro|Electric|Heisswasser|Heißwasser)\b/i,
+      /\b(Dampf|Steam)\b/i
+    ]);
+    result.heatingType = pharmaHeating || "";
+
+    // The plate does not contain a free-form equipment description; noisy OCR
+    // should not be promoted into this field.
+    result.equipment = "";
   }
 
   if (result.manufacturer === "Alfa Laval" && !result.orderNumber) {
@@ -1178,6 +1193,7 @@ function parseNameplate(text) {
     !/^(?:model|modello|matricola|serial|date|hz|ph|volt|total|lt|bar)\b/i.test(line)
   ) || "";
   if (/^(?:SEW-EURODRIVE|KAESER COMPRESSORS|ABB Motors)$/i.test(result.equipment)) result.equipment = "";
+  if (isPharmaggFamily) result.equipment = "";
 
   if (!result.year) {
     result.year = first(normalized, [/\b((?:19|20)\d{2})\b/]);
