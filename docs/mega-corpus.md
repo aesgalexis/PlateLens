@@ -58,7 +58,7 @@ The stress templates are based on public manufacturer documentation and plate ex
 
 The exact hand-curated public examples and additional source links remain documented in `docs/test-corpus.md`.
 
-## What this suite is — and is not
+## What this suite is - and is not
 
 These are 100 regression cases derived from real public plate families. They are not presented as 100 independently downloaded photographs. The purpose is repeatable parser stress testing: alter values and common layouts while keeping the semantics of each manufacturer's plate format.
 
