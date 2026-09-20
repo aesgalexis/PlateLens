@@ -714,7 +714,7 @@ function detectFieldPresence(text) {
 
 function parseNameplate(text) {
   const normalized = text
-    .replace(/[–—]/g,"-")
+    .replace(/–/g,"-")
     .replace(/Ø/g,"0")
     .replace(/\bm\s+tros\b/gi,"metros")
     .replace(/\bampe\b/gi,"amper")
