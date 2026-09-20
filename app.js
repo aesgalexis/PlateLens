@@ -501,16 +501,18 @@ analyzeBtn.addEventListener("click", async () => {
           tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
           preserve_interword_spaces: "1"
         });
-        const rightColumnResult = await worker.recognize(orientedImage, {rectangle:rightColumn});
+        const rightColumnBlockResult = await worker.recognize(orientedImage, {rectangle:rightColumn});
 
         await worker.setParameters({
           tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
           preserve_interword_spaces: "1"
         });
+        const rightColumnSparseResult = await worker.recognize(orientedImage, {rectangle:rightColumn});
         const leftColumnResult = await worker.recognize(orientedImage, {rectangle:leftColumn});
 
         text = mergeOcrTexts(
-          rightColumnResult.data.text,
+          rightColumnBlockResult.data.text,
+          rightColumnSparseResult.data.text,
           leftColumnResult.data.text,
           text
         );
