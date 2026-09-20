@@ -1,8 +1,8 @@
 const fields = [
-  ["manufacturer","Manufacturer"],["equipment","Equipment / description"],["model","Model / type"],["serialNumber","Serial number"],["partNumber","Part / product code"],["orderNumber","Order / work order"],
-  ["date","Date"],["phases","Phases"],["voltage","Voltage"],["frequency","Frequency"],["power","Total power"],["apparentPower","Apparent power"],["current","Current"],
+  ["manufacturer","Manufacturer"],["brand","Brand"],["equipment","Equipment / description"],["model","Model / type"],["serialNumber","Serial number"],["partNumber","Part / product code"],["orderNumber","Order / work order"],
+  ["date","Date"],["phases","Phases"],["voltage","Voltage"],["frequency","Frequency"],["power","Total power"],["apparentPower","Apparent power"],["current","Current"],["electricalType","Electrical supply / current type"],
   ["capacity","Capacity / load"],["volume","Volume"],["refrigerant","Refrigerant / medium"],["ratio","Ratio"],["flow","Flow"],["head","Head"],["workingPressure","Working pressure"],["overpressure","Max / overpressure"],["heatingPower","Heating power"],["heatingType","Heating type"],["airPressure","Air operating pressure"],["airSupplyPressure","Air supply pressure"],["steamPressure","Max steam pressure"],["operatingTemperature","Operating temperature"],["fuseRating","Fuse rating"],
-  ["speed","Speed"],["ipRating","IP rating"],["year","Year"],["cosPhi","Power factor / cos φ"],["weight","Weight"]
+  ["speed","Speed"],["ipRating","IP rating"],["kineticEnergy","Kinetic energy"],["year","Year"],["cosPhi","Power factor / cos φ"],["weight","Weight"]
 ];
 
 const input = document.querySelector("#imageInput");
@@ -319,8 +319,8 @@ function ocrScore(result) {
 }
 function extractionCoverage(text) {
   const parsed = parseNameplate(text);
-  const technicalKeys = ["voltage","frequency","power","apparentPower","current","speed","capacity","volume","flow","head","workingPressure","overpressure","airPressure","airSupplyPressure","steamPressure","operatingTemperature","fuseRating"];
-  const identityKeys = ["manufacturer","model","serialNumber","partNumber","orderNumber"];
+  const technicalKeys = ["voltage","frequency","power","apparentPower","current","electricalType","speed","capacity","volume","flow","head","workingPressure","overpressure","airPressure","airSupplyPressure","steamPressure","operatingTemperature","fuseRating","kineticEnergy"];
+  const identityKeys = ["manufacturer","brand","model","serialNumber","partNumber","orderNumber"];
   const technicalCount = technicalKeys.filter(key => Boolean(parsed[key])).length;
   const identityCount = identityKeys.filter(key => Boolean(parsed[key])).length;
   const fieldCount = Object.values(parsed).filter(Boolean).length;
@@ -476,44 +476,51 @@ analyzeBtn.addEventListener("click", async () => {
         text = mergeOcrTexts(text, bodyResult.data.text);
       }
 
-      const looksLikePharmaggPlate =
-        /\bPHARMAGG\b/i.test(text) ||
-        (/\bKannegiesser\b/i.test(text) && /\b(?:Hoya|Baujahr|Fabr\.?\s*Nr|F[üu]llraum|Nennstrom|Schutzart)\b/i.test(text));
+      // Many industrial nameplates are laid out as two independent label/value
+      // columns. Read those columns when the first passes still have weak
+      // technical coverage. This is layout-driven, not manufacturer-driven.
+      const beforeColumns = extractionCoverage(text);
+      const likelyTabularPlate =
+        needsTechnicalRegionRetry(text) ||
+        (beforeColumns.fieldCount < 12 &&
+          /\b(?:type|typ|model|serial|fabr\.?\s*nr|voltage|spannung|strom|current|hz|kw|bar|rpm|baujahr|year)\b/i.test(text));
 
-      if (looksLikePharmaggPlate) {
+      if (likelyTabularPlate) {
         ocrPass = 4;
         progressText.textContent = "Reading plate columns…";
 
         const leftColumn = {
-          left: plateBody.left,
-          top: Math.round(orientedImage.height * 0.20),
-          width: Math.round(plateBody.width * 0.50),
-          height: Math.round(orientedImage.height * 0.63)
+          left: Math.round(orientedImage.width * 0.04),
+          top: Math.round(orientedImage.height * 0.08),
+          width: Math.round(orientedImage.width * 0.52),
+          height: Math.round(orientedImage.height * 0.80)
         };
         const rightColumn = {
-          left: Math.round(plateBody.left + plateBody.width * 0.43),
-          top: Math.round(orientedImage.height * 0.10),
-          width: Math.round(plateBody.width * 0.57),
-          height: Math.round(orientedImage.height * 0.73)
+          left: Math.round(orientedImage.width * 0.44),
+          top: Math.round(orientedImage.height * 0.08),
+          width: Math.round(orientedImage.width * 0.52),
+          height: Math.round(orientedImage.height * 0.80)
         };
 
         await worker.setParameters({
           tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
           preserve_interword_spaces: "1"
         });
+        const leftColumnBlockResult = await worker.recognize(orientedImage, {rectangle:leftColumn});
         const rightColumnBlockResult = await worker.recognize(orientedImage, {rectangle:rightColumn});
 
         await worker.setParameters({
           tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
           preserve_interword_spaces: "1"
         });
+        const leftColumnSparseResult = await worker.recognize(orientedImage, {rectangle:leftColumn});
         const rightColumnSparseResult = await worker.recognize(orientedImage, {rectangle:rightColumn});
-        const leftColumnResult = await worker.recognize(orientedImage, {rectangle:leftColumn});
 
         text = mergeOcrTexts(
+          leftColumnBlockResult.data.text,
           rightColumnBlockResult.data.text,
+          leftColumnSparseResult.data.text,
           rightColumnSparseResult.data.text,
-          leftColumnResult.data.text,
           text
         );
       }
@@ -676,6 +683,7 @@ function detectFieldPresence(text) {
   const source = String(text || "").replace(/\r/g, "");
   const patterns = {
     manufacturer: /\b(?:manufacturer|fabricante|hersteller|costruttore)\b/i,
+    brand: /\b(?:brand|marca|marke|gruppe|group)\b/i,
     equipment: /\b(?:equipment|description|machine|maquina|máquina|anlage|apparato)\b/i,
     model: /\b(?:model(?:lo|o)?|type|tipo|typ|t\/c)\b/i,
     serialNumber: /\b(?:serial(?:\s*(?:no|number|nr|n[°º.]?))?|s\/n|sn\b|matricola|fabr\.?\s*nr\.?|works\s*n[°º]?|n[°º]?\s*de\s*serie)\b/i,
@@ -689,6 +697,7 @@ function detectFieldPresence(text) {
     power: /\b(?:power|potencia|leistung|rated\s+power|input\s+power|total\s+W|kW|HP|CV|P2)\b/i,
     apparentPower: /\b(?:apparent\s+power|kVA)\b/i,
     current: /\b(?:current|corriente|strom|amps?|ampere|amperios|F\.\s*L\.\s*A\.?|FLA|I\s*\(\s*A\s*\))\b/i,
+    electricalType: /\b(?:stromart|current\s+type|supply\s+type|ac|dc)\b/i,
     capacity: /\b(?:capacity|capacidad|capacità|trocken[\s-]*füllmenge|fullmenge|füllmenge)\b/i,
     volume: /\b(?:volume|füllraum|fullraum|liters?|litres?|litri|Lt\b|LTR\b)\b/i,
     refrigerant: /\b(?:refrigerant|refrig\.?|kältemittel|fluide\s+frigorigène)\b/i,
@@ -706,6 +715,7 @@ function detectFieldPresence(text) {
     fuseRating: /\b(?:fuse|fusing|absicherung)\b/i,
     speed: /\b(?:speed|velocidad|drehzahl|rpm|r\/min|min-?1|nmax|n1max|n2max|FLRPM)\b/i,
     ipRating: /\b(?:degree\s+of\s+protection|protection\s+degree|IP\s*(?:X\d|\d{0,2}))\b/i,
+    kineticEnergy: /\b(?:kinetic\s+energy|kinetische\s+energie)\b/i,
     cosPhi: /\b(?:cos\s*[φϕ]|cos\s*phi|power\s+factor|P\.\s*F\.?)\b/i,
     weight: /\b(?:weight|gewicht|peso|mass|mges)\b/i
   };
@@ -811,6 +821,10 @@ function parseNameplate(text) {
     /\b(\d+(?:[.,]\d+)?)\s*kVA\b/i
   ]);
   if (result.apparentPower && !/kVA$/i.test(result.apparentPower)) result.apparentPower += " kVA";
+
+  result.electricalType = first(normalized, [
+    /(?:stromart|current\s+type|supply\s+type)\s*[:=~-]?\s*(AC|DC|AC\/DC|DC\/AC)\b/i
+  ]);
 
   result.current = first(normalized, [
     /\bAmps\s+LD\/ND\/HD\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?){1,3})\b/i,
@@ -997,6 +1011,16 @@ function parseNameplate(text) {
   ]);
   if (result.overpressure) result.overpressure += " bar";
 
+  result.kineticEnergy = first(normalized, [
+    /(?:kinetische\s+energie|kinetic\s+energy)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*(Nm|N\s*m|J|kJ)\b/i
+  ]);
+  if (result.kineticEnergy) {
+    const kineticUnit = normalized.match(/(?:kinetische\s+energie|kinetic\s+energy)\s*[:=~-]?\s*\d+(?:[.,]\d+)?\s*(Nm|N\s*m|J|kJ)\b/i);
+    if (kineticUnit && kineticUnit[1] && !new RegExp(kineticUnit[1].replace(/\s+/g, "\\s*") + "$", "i").test(result.kineticEnergy)) {
+      result.kineticEnergy += " " + kineticUnit[1].replace(/\s+/g, "");
+    }
+  }
+
   result.speed = first(normalized, [
     /\bn1\s*max\s*[:=.-]?\s*(\d{2,5})\s*(?:\/min|r\/?min|rpm)\b/i,
     /(?:^|\n)\s*(?:R\.[ \t]*P\.[ \t]*M\.?|RPM|FLRPM|F\.[ \t]*L\.[ \t]*RPM)[ \t]*[:=.-]?[ \t]*(\d{2,5}(?:[ \t]*\/[ \t]*\d{2,5}){0,3})\b/i,
@@ -1087,10 +1111,25 @@ function parseNameplate(text) {
   result.manufacturer = knownBrand ? knownBrand[0] : first(normalized, [
     /\b([A-Z][A-Za-z0-9&. -]{1,35}?(?:GmbH(?:\s*&\s*Co\.?)?|AG|Ltd\.?|S\.?A\.?|S\.?r\.?l\.?|Inc\.?|Corp\.?))(?=,|\n|$)/i
   ]);
+
+  // Keep corporate manufacturer and commercial brand/group separate when the
+  // plate explicitly provides both. Do not duplicate the manufacturer as brand.
+  result.brand = first(normalized, [
+    /(?:brand|marca|marke)\s*[:=.-]?\s*([A-Z][A-Za-z0-9&.' -]{1,35})(?=\n|$)/im,
+    /(?:^|\n)\s*([A-Z][A-Za-z0-9&.' -]{1,35}?)\s*[- ]?(?:Gruppe|Group)\b/im
+  ]);
+  if (result.brand && result.manufacturer &&
+      result.brand.toLowerCase() === result.manufacturer.toLowerCase()) {
+    result.brand = "";
+  }
+
   const isPharmaggFamily =
     /\bPHARMAGG\b/i.test(normalized) ||
     (/\bKannegiesser\b/i.test(normalized) && /\b(?:Hoya|Systemtechnik|SYSTEMTECHNIK)\b/i.test(normalized));
-  if (isPharmaggFamily) result.manufacturer = "PHARMAGG";
+  if (isPharmaggFamily) {
+    result.manufacturer = "PHARMAGG";
+    if (/\bKannegiesser\b/i.test(normalized)) result.brand = "Kannegiesser";
+  }
   if (result.manufacturer === "Leroy-Somer" && !result.serialNumber) {
     result.serialNumber = first(normalized, [/(?:19|20)\d{2}\s+([A-Z]?\d{5,10})\b/i]);
   }
