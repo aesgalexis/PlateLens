@@ -12,7 +12,7 @@ const api = new Function(
 )();
 
 const blochAngles = {
-  0: '. | es Dl fee poe e . 3\n4 q \\ BA Ee = cam ims eu\n= | wy | |e|Clol a\n— ‘ oO] Pia eS Tee',
+  0: '. | es Dl fee poe e . 3\n4 q \\ BA Ee = cam ims eu\n= | wy | |e|Clol a\n- ‘ oO] Pia eS Tee',
   90: '(uredg) - e1duayea - JeSseyjesse\nMOS" Yoo |qsequiog\n4d - 10 Islv AOSb/4UIg-Jopesuepuog',
   180: '= | eee\n9 » |O/2 (oie) ha\ne |2\\<|3|si=)\nao Sf a oe ~~',
   270: 'Monofasico 230 Volt 50 Hz 2850 rpm\n0.40 CV 0.30 Kw 2 amper IP 54\nCondensador 8mF/450V\nwww.bombasbloch.com\nMassalfassar Valencia Spain'
