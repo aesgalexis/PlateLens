@@ -712,6 +712,18 @@ const fixtures = [
     absent: ['current','ratio','heatingType','equipment']
   },
   {
+    name: 'PHARMAGG two-digit Baujahr recovery',
+    text: 'PHARMAGG\nKannegiesser-Gruppe\nTyp FU1400\nFabr. Nr. 14200005027\nBaujahr 14\nE.14.2000\nNennspannung 3 x 400 V\nBeheizungsart Dampf',
+    expected: {
+      manufacturer: 'PHARMAGG',
+      model: 'FU1400',
+      serialNumber: '14200005027',
+      year: '2000',
+      voltage: '400 V',
+      heatingType: 'Dampf'
+    }
+  },
+  {
     name: 'PHARMAGG false-positive rejection',
     text: 'PHARMAGG\nTEMTECHNIK-GMBH\nKannegiesser-Gruppe\nTyp o\nTEMTECHNIK-GMBH\nBaujahr 2000\nNennfrequenz 50 Hz\nAnschlußwert 15,5 kW\n5 A\ni=3\nFU1400\nFabr. Nr. 14200005027\nNennstrom 32 A\nNennspannung 3 x 400 V\nSchutzart IP54',
     expected: {
