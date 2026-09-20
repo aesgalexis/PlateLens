@@ -476,6 +476,46 @@ analyzeBtn.addEventListener("click", async () => {
         text = mergeOcrTexts(text, bodyResult.data.text);
       }
 
+      const looksLikePharmaggPlate =
+        /\bPHARMAGG\b/i.test(text) ||
+        (/\bKannegiesser\b/i.test(text) && /\b(?:Hoya|Baujahr|Fabr\.?\s*Nr|F[üu]llraum|Nennstrom|Schutzart)\b/i.test(text));
+
+      if (looksLikePharmaggPlate) {
+        ocrPass = 4;
+        progressText.textContent = "Reading plate columns…";
+
+        const leftColumn = {
+          left: plateBody.left,
+          top: Math.round(orientedImage.height * 0.20),
+          width: Math.round(plateBody.width * 0.50),
+          height: Math.round(orientedImage.height * 0.63)
+        };
+        const rightColumn = {
+          left: Math.round(plateBody.left + plateBody.width * 0.43),
+          top: Math.round(orientedImage.height * 0.10),
+          width: Math.round(plateBody.width * 0.57),
+          height: Math.round(orientedImage.height * 0.73)
+        };
+
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+          preserve_interword_spaces: "1"
+        });
+        const rightColumnResult = await worker.recognize(orientedImage, {rectangle:rightColumn});
+
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+          preserve_interword_spaces: "1"
+        });
+        const leftColumnResult = await worker.recognize(orientedImage, {rectangle:leftColumn});
+
+        text = mergeOcrTexts(
+          rightColumnResult.data.text,
+          leftColumnResult.data.text,
+          text
+        );
+      }
+
       if (needsSparseRetry(text)) {
         ocrPass = 4;
         progressText.textContent = "Reading sparse plate body…";
