@@ -754,7 +754,7 @@ const fixtures = [
   },
   {
     name: 'BLOCH damaged real OCR',
-    text: 'se dE\nC€\nfay\n35/5 metros\nscas —1”X1"\nonofasico\n2850 om\n0.40 CV\n0.30 Kw\nIP 54\nndensador-8mF/450V\nAis. CL - E\nwww.bombashbloch.com\nMassaifassar - Valencia - (Spain)\nwww.bombasbloch.com\n40M\n35/5 m tros\n50 Hz\nMonofasico\n2850 rpm\n2 ampe\nCondensador-8mF/450V\nAisl. CL - E',
+    text: 'se dE\nC€\nfay\n35/5 metros\nscas -1”X1"\nonofasico\n2850 om\n0.40 CV\n0.30 Kw\nIP 54\nndensador-8mF/450V\nAis. CL - E\nwww.bombashbloch.com\nMassaifassar - Valencia - (Spain)\nwww.bombasbloch.com\n40M\n35/5 m tros\n50 Hz\nMonofasico\n2850 rpm\n2 ampe\nCondensador-8mF/450V\nAisl. CL - E',
     expected: {
       manufacturer: 'BLOCH',
       model: '40M',
