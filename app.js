@@ -925,8 +925,17 @@ function parseNameplate(text) {
   if (result.steamPressure && !/bar$/i.test(result.steamPressure)) result.steamPressure += " bar";
 
   result.year = first(normalized, [
-    /(?:year\s+of\s+manufacture|baujahr\s*\/\s*year|baujahr|year|yr|año|built)\s*[:#.-]?\s*\'?((?:19|20)?\d{2})/i
+    /(?:year\s+of\s+manufacture|baujahr\s*\/\s*year|baujahr|year|yr|año|built)\s*[:#.-]?\s*\'?((?:19|20)\d{2})/i,
+    /(?:year\s+of\s+manufacture|baujahr\s*\/\s*year|baujahr|year|yr|año|built)\s*[:#.-]?\s*\'?(\d{2})\b/i
   ]);
+  // Never let a weak two-digit OCR reading (for example "Baujahr 14")
+  // override a clearly readable four-digit year elsewhere on the same plate.
+  // This is especially important on PHARMAGG/Kannegiesser plates where
+  // drawing numbers such as E.14.2000 can sit close to the Baujahr row.
+  if (result.year && /^\d{2}$/.test(result.year)) {
+    const fourDigitYears = [...normalized.matchAll(/\b((?:19|20)\d{2})\b/g)].map(match => match[1]);
+    if (fourDigitYears.length) result.year = fourDigitYears[0];
+  }
   const currentEqualsYear = result.current && result.year && result.current.replace(/\s*A$/i, "") === result.year;
   if (currentEqualsYear) {
     const labelledCurrentAfterYear = normalized.match(/(?:baujahr\s*\/\s*year|baujahr|year)\s*[:#.-]?\s*(?:19|20)?\d{2}\s+A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)/i);
