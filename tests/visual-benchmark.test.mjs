@@ -111,7 +111,7 @@ const fixtures = [
     name: 'Bitzer compressor',
     source: 'HOS BV visible nameplate',
     text: 'BITZER KÜHLMASCHINENBAU GMBH\nTyp 4FC-3.2Y-40S\nS.Nr. 1682801217\nNennspannung V D 3Ph~ / V Y 3Ph~\n220-240 / 380-420 50 Hz\n265-290 / 440-480 60 Hz\nMax.Betr.strom A(D) 15,9 A(Y) 9,2\nAnlaufstrom 76,6 A\nIP 65\nND/HD max 19 / 28 bar',
-    expected: {manufacturer:'BITZER KÜHLMASCHINENBAU GMBH', model:'4FC-3.2Y-40S', serialNumber:'1682801217', frequency:'50/60 Hz', ipRating:'IP 65'}
+    expected: {manufacturer:'Bitzer', model:'4FC-3.2Y-40S', serialNumber:'1682801217', frequency:'50/60 Hz', ipRating:'IP 65'}
   },
   {
     name: 'Trane RTAC chiller',
