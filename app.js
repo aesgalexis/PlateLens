@@ -1171,7 +1171,9 @@ function parseHeaderNumericTable(lines) {
     const header = lines[i].trim();
     if (!/\bkW\b/i.test(header) || !/(?:1\/min|r\/?min|rpm|min-?1)/i.test(header)) continue;
 
-    const tokens = header.split(/\s+/);
+    const tokens = header
+      .replace(/cos\s*(?:phi|φ|ϕ)/ig, "cosphi")
+      .split(/\s+/);
     const powerIndex = tokens.findIndex(token => /^kW$/i.test(token));
     const currentIndex = tokens.findIndex(token => /^A$/i.test(token));
     const speedIndex = tokens.findIndex(token => /^(?:1\/min|r\/?min|rpm|min-?1)$/i.test(token));
@@ -1179,6 +1181,7 @@ function parseHeaderNumericTable(lines) {
 
     for (const row of lines.slice(i + 1, i + 7)) {
       const values = row.trim().split(/\s+/);
+      if (/^[DYΔ∆]$/i.test(values[0] || "")) values.shift();
       if (values.length < Math.max(powerIndex, speedIndex, currentIndex) + 1) continue;
       if (!values.every(value => /^[-+]?\d+(?:[.,]\d+)?$/.test(value))) continue;
       const out = {};
@@ -1898,7 +1901,10 @@ function parseNameplate(text) {
     ]);
   }
 
-  const finalFrequencies = uniqueValues([...normalized.matchAll(/\b(50|60)\s*Hz\b/gi)].map(match => match[1]));
+  const finalFrequencies = uniqueValues([
+    ...[...normalized.matchAll(/\b(50|60)\s*Hz\b/gi)].map(match => match[1]),
+    ...[...normalized.matchAll(/\bHz\s*[:=.-]?\s*(50|60)\b/gi)].map(match => match[1])
+  ]);
   if (finalFrequencies.length > 1) result.frequency = finalFrequencies.join("/") + " Hz";
 
   return result;
