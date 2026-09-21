@@ -955,8 +955,17 @@ function recoverExplicitPatterns(result, normalized, lines) {
     /MACHINE\s+MODEL\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5})(?=\s*(?:\n|$))/im
   ]);
 
+  const strongCode = first(normalized, [
+    /\b(ACS\d{3,4}-[A-Z0-9._\/-]+)\b/i,
+    /\b(ATV\d{3}[A-Z0-9._\/-]+)\b/i,
+    /\b(6SL\d[A-Z0-9._\/-]+)\b/i,
+    /\b(DRE\d[A-Z0-9._\/-]+)\b/i,
+    /(?:^|\n)\s*(ETB\s+\d[A-Z0-9 ._\/-]+)\s*(?:\n|$)/im,
+    /(?:^|\n)\s*(GA\d{2,3}(?:VSD)?)\s*(?:\n|$)/im
+  ]);
+
   const highConfidenceModelLine = lines.find(line =>
-    /^(?:ACS\d|ATV\d|6SL\d|DRE\d|ETB\s+\d|GA\d{2,3}(?:VSD)?\b|[A-Z]{1,4}\d{2,}[A-Z0-9._\/-]*)/i.test(line) &&
+    /^(?!IP\d)(?:[A-Z]{1,4}\d{2,}[A-Z0-9._\/-]*)/i.test(line) &&
     !/\b(?:Hz|kW|bar|rpm|kg)\b/i.test(line) &&
     !/\b\d+(?:[.,]\d+)?\s*(?:V|A)\b/i.test(line)
   );
@@ -967,8 +976,9 @@ function recoverExplicitPatterns(result, normalized, lines) {
   ]);
 
   if (machineModel) result.model = machineModel;
-  else if (highConfidenceModelLine) result.model = clean(highConfidenceModelLine);
   else if (explicitModel) result.model = explicitModel;
+  else if (strongCode) result.model = strongCode;
+  else if (highConfidenceModelLine) result.model = clean(highConfidenceModelLine);
 
   if (!result.model) {
     const compressorIndex = lines.findIndex(line => /^(?:compressor|screw\s+air\s+compressor)$/i.test(line));
@@ -1887,6 +1897,9 @@ function parseNameplate(text) {
       /(?:^|\n)\s*((?:R|K|F|S)[A-Z]?\d{1,3}\s+[A-Z]{2,}\d[A-Z0-9._\/-]+)\s*(?:\n|$)/i
     ]);
   }
+
+  const finalFrequencies = uniqueValues([...normalized.matchAll(/\b(50|60)\s*Hz\b/gi)].map(match => match[1]));
+  if (finalFrequencies.length > 1) result.frequency = finalFrequencies.join("/") + " Hz";
 
   return result;
 }
