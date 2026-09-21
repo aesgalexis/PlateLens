@@ -558,6 +558,51 @@ analyzeBtn.addEventListener("click", async () => {
         text = mergeOcrTexts(...tileTexts, text);
       }
 
+      // A second refinement reads shallow horizontal bands. On dense
+      // nameplates this keeps each label and its value in the same OCR block,
+      // which is more reliable than trying to associate values after merging
+      // independent columns.
+      const bandCoverage = extractionCoverage(text);
+      const bandParsed = bandCoverage.parsed;
+      const missingCoreFields = ["voltage","frequency","current","speed","fuseRating","ipRating"]
+        .filter(key => !bandParsed[key]).length;
+
+      if (bandCoverage.technicalCount < 10 || missingCoreFields >= 3) {
+        ocrPass = 6;
+        progressText.textContent = "Reading technical rows…";
+
+        const bandTexts = [];
+        const bandTops = [0.08, 0.29, 0.50, 0.70];
+
+        for (const top of bandTops) {
+          const bandRect = {
+            left: Math.round(orientedImage.width * 0.025),
+            top: Math.round(orientedImage.height * top),
+            width: Math.round(orientedImage.width * 0.95),
+            height: Math.round(orientedImage.height * 0.25)
+          };
+          const band = cropCanvas(orientedImage, bandRect);
+          const grayBand = makeGrayVariant(band);
+          const binaryBand = makeBinaryVariant(grayBand);
+
+          await worker.setParameters({
+            tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+            preserve_interword_spaces: "1"
+          });
+          const grayResult = await worker.recognize(grayBand);
+          bandTexts.push(grayResult.data.text);
+
+          await worker.setParameters({
+            tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+            preserve_interword_spaces: "1"
+          });
+          const binaryResult = await worker.recognize(binaryBand);
+          bandTexts.push(binaryResult.data.text);
+        }
+
+        text = mergeOcrTexts(...bandTexts, text);
+      }
+
       if (needsSparseRetry(text)) {
         ocrPass = 4;
         progressText.textContent = "Reading sparse plate body…";
@@ -691,6 +736,8 @@ function addUnit(value, unit) {
 }
 
 function strictLabeledValue(lines, labelPattern, valuePatterns, lookAhead = 1, rejectLabelLinePattern = null) {
+  const anotherTechnicalLabel = /\b(?:model|type|typ|serial|fabr\.?\s*nr|year|baujahr|voltage|spannung|frequency|frequenz|current|strom|power|leistung|capacity|f[üu]llmenge|volume|f[üu]llraum|speed|drehzahl|fuse|absicherung|schutzart|pressure|druck|temperature|temperatur|heating|beheizung|energy|energie)\b/i;
+
   for (let i = 0; i < lines.length; i++) {
     const labelLine = lines[i];
     labelPattern.lastIndex = 0;
@@ -702,6 +749,7 @@ function strictLabeledValue(lines, labelPattern, valuePatterns, lookAhead = 1, r
 
     const end = Math.min(lines.length, i + lookAhead + 1);
     for (let j = i; j < end; j++) {
+      if (j > i && anotherTechnicalLabel.test(lines[j])) break;
       for (const pattern of valuePatterns) {
         const value = first(lines[j], [pattern]);
         if (value) return value;
@@ -858,7 +906,7 @@ function recoverSplitLabelValues(result, lines) {
 
   const workingPressure = strictLabeledValue(
     lines,
-    /(?:working\s+pressure|zul[aä]ssiger\s+betriebsdruck|betriebsdruck)/i,
+    /(?:working\s+pressure|zul[aä]ssiger\s+betriebsdruck)/i,
     [/\b(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i],
     1,
     /(?:druckluft|air|überdruck|ueberdruck|overpressure)/i
@@ -1245,6 +1293,12 @@ function parseNameplate(text) {
     /(?:zul\.?\s*)?Betriebs[\s-]*(?:über|ueber)druck\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*bar\b/i
   ]);
   if (result.overpressure) result.overpressure += " bar";
+
+  for (const pressureKey of ["workingPressure","overpressure","airPressure","airSupplyPressure","steamPressure"]) {
+    if (result[pressureKey]) {
+      result[pressureKey] = result[pressureKey].replace(/\s*[-–]\s*/g, "-");
+    }
+  }
 
   result.kineticEnergy = first(normalized, [
     /(?:kinetische\s+energie|kinetic\s+energy)\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)\s*(Nm|N\s*m|J|kJ)\b/i
