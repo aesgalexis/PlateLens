@@ -751,6 +751,20 @@ const fixtures = [
     absent: ['weight']
   },
   {
+    name: 'Labelled values outrank nearby technical noise',
+    text: 'Example Industries GmbH\n140 V\n5 A\n10 bar\nRated voltage 3 x 400 V\nRated current 32 A\nFuse 35 A\nAir supply pressure 10 bar\nAir operating pressure 6-8 bar\nWorking pressure 4-8 bar\nOverpressure 10 bar',
+    expected: {
+      phases: '3',
+      voltage: '400 V',
+      current: '32 A',
+      fuseRating: '35 A',
+      airSupplyPressure: '10 bar',
+      airPressure: '6-8 bar',
+      workingPressure: '4-8 bar',
+      overpressure: '10 bar'
+    }
+  },
+  {
     name: 'PHARMAGG false-positive rejection',
     text: 'PHARMAGG\nTEMTECHNIK-GMBH\nKannegiesser-Gruppe\nTyp o\nTEMTECHNIK-GMBH\nBaujahr 2000\nNennfrequenz 50 Hz\nAnschlußwert 15,5 kW\n5 A\ni=3\nFU1400\nFabr. Nr. 14200005027\nNennstrom 32 A\nNennspannung 3 x 400 V\nSchutzart IP54',
     expected: {
