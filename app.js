@@ -765,9 +765,10 @@ function recoverSplitLabelValues(result, lines) {
   // not outrank a labelled value from the same row or the following row.
   const labelledVoltage = strictLabeledValue(
     lines,
-    /\b(?:rated\s+voltage|nennspannung|voltage|spannung|tension|tensión|volt)\b/i,
+    /\b(?:rated\s+voltage|mains\s+voltage|input\s+voltage|nennspannung|voltage|spannung|tension|tensión|volt)\b/i,
     [/\b(?:[13]\s*[x×~]\s*)?(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V(?:AC|DC)?\b/i],
-    1
+    1,
+    /\b(?:control|aux(?:iliary)?|brake|capacitor|condenser)\b/i
   );
   if (labelledVoltage) result.voltage = addUnit(labelledVoltage, "V");
 
