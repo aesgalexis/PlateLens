@@ -905,6 +905,94 @@ function strictLabeledValue(lines, labelPattern, valuePatterns, lookAhead = 1, r
   return "";
 }
 
+function valueInLabelWindow(lines, labelPattern, valuePatterns, radius = 1) {
+  for (let i = 0; i < lines.length; i++) {
+    labelPattern.lastIndex = 0;
+    if (!labelPattern.test(lines[i])) continue;
+
+    const start = Math.max(0, i - radius);
+    const end = Math.min(lines.length, i + radius + 1);
+    const windowText = lines.slice(start, end).join(" ");
+
+    labelPattern.lastIndex = 0;
+    if (!labelPattern.test(windowText)) continue;
+
+    for (const pattern of valuePatterns) {
+      const value = first(windowText, [pattern]);
+      if (value) return value;
+    }
+  }
+  return "";
+}
+
+function recoverNoisyTechnicalRows(result, lines) {
+  const noisyVoltage = valueInLabelWindow(
+    lines,
+    /(?:nennspannung|neh?n?spannung|rated\s+voltage|voltage|spannung)/i,
+    [
+      /\b[13]\s*[x×~]\s*(\d{3,4})\b/i,
+      /\b(\d{3,4})\s*V(?:AC|DC)?\b/i
+    ],
+    1
+  );
+  if (noisyVoltage) result.voltage = preferLabeledRating(result.voltage, addUnit(noisyVoltage, "V"));
+
+  const noisyPhases = valueInLabelWindow(
+    lines,
+    /(?:nennspannung|neh?n?spannung|rated\s+voltage|voltage|spannung)/i,
+    [/\b([13])\s*[x×~]\s*\d{3,4}\b/i],
+    1
+  );
+  if (noisyPhases) result.phases = noisyPhases;
+
+  const noisyCurrent = valueInLabelWindow(
+    lines,
+    /(?:nennstrom|nehnstrom|nehnstro|n\s*nstrom|rated\s+current|current|corriente)/i,
+    [/\b(\d+(?:[.,]\d+)?)\s*[\[|]?\s*A\b/i],
+    1
+  );
+  if (noisyCurrent) result.current = preferLabeledRating(result.current, addUnit(noisyCurrent, "A"));
+
+  const noisyEnergy = valueInLabelWindow(
+    lines,
+    /(?:kinetische|kinetic)/i,
+    [/\b(\d{4,})\s*[I1|]?\s*(?:Nm|N\s*m|J|kJ)\b/i],
+    1
+  );
+  if (noisyEnergy) {
+    const energyWindow = lines.findIndex(line => /(?:kinetische|kinetic)/i.test(line));
+    const text = energyWindow >= 0
+      ? lines.slice(Math.max(0, energyWindow - 1), Math.min(lines.length, energyWindow + 3)).join(" ")
+      : "";
+    const unit = text.match(/\b(?:I|1|\|)?\s*(Nm|N\s*m|J|kJ)\b/i);
+    result.kineticEnergy = noisyEnergy + " " + (unit && unit[1] ? unit[1].replace(/\s+/g, "") : "Nm");
+  }
+
+  const noisyAirPressure = valueInLabelWindow(
+    lines,
+    /druckluft/i,
+    [/betriebsdruck[^\d]{0,20}(\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?)\s*bar\b/i],
+    1
+  );
+  if (noisyAirPressure) result.airPressure = addUnit(noisyAirPressure.replace(/\s*[-–]\s*/g, "-"), "bar");
+
+  const noisyWorkingPressure = valueInLabelWindow(
+    lines,
+    /zul[aäá]ssiger/i,
+    [/(\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?)[^\n]{0,30}betriebsdruck[^\n]{0,20}bar\b/i],
+    1
+  );
+  if (noisyWorkingPressure) result.workingPressure = addUnit(noisyWorkingPressure.replace(/\s*[-–]\s*/g, "-"), "bar");
+
+  const noisyOverpressure = valueInLabelWindow(
+    lines,
+    /(?:overpressure|(?:über|ueber|uber|tiber)druck)/i,
+    [/\b(\d+(?:[.,]\d+)?)\s*bar\b/i],
+    1
+  );
+  if (noisyOverpressure) result.overpressure = addUnit(noisyOverpressure, "bar");
+}
+
 function recoverSplitLabelValues(result, lines) {
   // Prefer values that are explicitly tied to their semantic label. Generic
   // unit matches elsewhere on a dense plate are useful as fallbacks, but must
@@ -1721,6 +1809,7 @@ function parseNameplate(text) {
   ]);
 
   recoverSplitLabelValues(result, lines);
+  recoverNoisyTechnicalRows(result, lines);
   recoverExplicitPatterns(result, normalized, lines);
 
   for (const pressureKey of ["workingPressure","overpressure","airPressure","airSupplyPressure","steamPressure"]) {
