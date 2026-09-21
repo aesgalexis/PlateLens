@@ -750,6 +750,10 @@ function strictLabeledValue(lines, labelPattern, valuePatterns, lookAhead = 1, r
     const end = Math.min(lines.length, i + lookAhead + 1);
     for (let j = i; j < end; j++) {
       if (j > i && anotherTechnicalLabel.test(lines[j])) break;
+      if (j > i && rejectLabelLinePattern) {
+        rejectLabelLinePattern.lastIndex = 0;
+        if (rejectLabelLinePattern.test(lines[j])) break;
+      }
       for (const pattern of valuePatterns) {
         const value = first(lines[j], [pattern]);
         if (value) return value;
