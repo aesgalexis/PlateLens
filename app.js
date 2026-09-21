@@ -991,6 +991,24 @@ function recoverNoisyTechnicalRows(result, lines) {
     1
   );
   if (noisyOverpressure) result.overpressure = addUnit(noisyOverpressure, "bar");
+
+  // OCR can detach a temperature value from its label. Recover it only when
+  // the document contains a temperature label and exactly one plausible
+  // explicit °C value, so we do not guess among multiple process temperatures.
+  if (!result.operatingTemperature &&
+      lines.some(line => /(?:betriebs[\s-]*temperatur|operating\s+temperature|temperatur|temperature)/i.test(line))) {
+    const joined = lines.join(" ");
+    const candidates = [...joined.matchAll(/(?:^|\s)[+]?(-?\d{1,3}(?:[.,]\d+)?)\s*°\s*C\b/gi)]
+      .map(match => match[1])
+      .filter(value => {
+        const n = Number(value.replace(",", "."));
+        return Number.isFinite(n) && n >= -50 && n <= 250;
+      });
+    const uniqueCandidates = uniqueValues(candidates);
+    if (uniqueCandidates.length === 1) {
+      result.operatingTemperature = uniqueCandidates[0] + " °C";
+    }
+  }
 }
 
 function recoverSplitLabelValues(result, lines) {
@@ -2050,7 +2068,6 @@ function parseNameplate(text) {
       /Nennstrom\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*A\b/i
     ]);
     if (ratedCurrent) result.current = ratedCurrent + " A";
-    else if (result.current) result.current = "";
 
     if (!/(?:^|\n)\s*(?:ratio\b|[ÜU]bersetzung\b)/im.test(normalized)) {
       result.ratio = "";
