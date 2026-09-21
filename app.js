@@ -123,7 +123,7 @@ async function prepareOcrImage(file) {
       img.src = url;
     });
     const longest = Math.max(image.naturalWidth, image.naturalHeight);
-    const scale = longest < 1600 ? 1600 / longest : (longest > 2400 ? 2400 / longest : 1);
+    const scale = longest < 2200 ? 2200 / longest : (longest > 3000 ? 3000 / longest : 1);
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
     canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -525,6 +525,39 @@ analyzeBtn.addEventListener("click", async () => {
         );
       }
 
+      // Dense industrial plates often lose small values in full-frame OCR.
+      // When coverage is still low, read smaller overlapping regions.
+      const detailCoverage = extractionCoverage(text);
+      if (detailCoverage.technicalCount < 8 || detailCoverage.fieldCount < 12) {
+        ocrPass = 5;
+        progressText.textContent = "Reading fine plate regions…";
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+          preserve_interword_spaces: "1"
+        });
+
+        const tileTexts = [];
+        const tileRows = [0.08, 0.31, 0.54];
+        const tileCols = [
+          {left:0.03, width:0.54},
+          {left:0.43, width:0.54}
+        ];
+
+        for (const rowTop of tileRows) {
+          for (const col of tileCols) {
+            const tile = {
+              left: Math.round(orientedImage.width * col.left),
+              top: Math.round(orientedImage.height * rowTop),
+              width: Math.round(orientedImage.width * col.width),
+              height: Math.round(orientedImage.height * 0.34)
+            };
+            const tileResult = await worker.recognize(orientedImage, {rectangle:tile});
+            tileTexts.push(tileResult.data.text);
+          }
+        }
+        text = mergeOcrTexts(...tileTexts, text);
+      }
+
       if (needsSparseRetry(text)) {
         ocrPass = 4;
         progressText.textContent = "Reading sparse plate body…";
@@ -635,6 +668,177 @@ function first(text, patterns) {
     if (match && match[1]) return clean(match[1]);
   }
   return "";
+}
+
+function valueNearLabel(lines, labelPattern, valuePatterns, lookAhead = 2) {
+  for (let i = 0; i < lines.length; i++) {
+    labelPattern.lastIndex = 0;
+    if (!labelPattern.test(lines[i])) continue;
+    const end = Math.min(lines.length, i + lookAhead + 1);
+    for (let j = i; j < end; j++) {
+      const value = first(lines[j], valuePatterns);
+      if (value) return value;
+    }
+  }
+  return "";
+}
+
+function addUnit(value, unit) {
+  if (!value) return "";
+  const compactValue = value.toLowerCase().replace(/\s+/g, "");
+  const compactUnit = unit.toLowerCase().replace(/\s+/g, "");
+  return compactValue.endsWith(compactUnit) ? value : value + " " + unit;
+}
+
+function recoverSplitLabelValues(result, lines) {
+  if (!result.year) {
+    result.year = valueNearLabel(lines,
+      /\b(?:year|baujahr|anno|año|yr|built)\b/i,
+      [/\b((?:19|20)\d{2})\b/, /\b(\d{2})\b/],
+      2
+    );
+  }
+
+  if (!result.voltage) {
+    const voltage = valueNearLabel(lines,
+      /\b(?:voltage|volt|spannung|tension|tensión|nennspannung|rated\s+voltage)\b/i,
+      [/\b(?:[13]\s*[x×~]\s*)?(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V\b/i, /\b(\d{3,4})\b/],
+      2
+    );
+    if (voltage) result.voltage = addUnit(voltage, "V");
+  }
+
+  if (!result.phases) {
+    result.phases = valueNearLabel(lines,
+      /\b(?:voltage|spannung|phase|phases|fasi|nennspannung)\b/i,
+      [/\b([13])\s*[x×~]\s*\d{2,4}\s*V?\b/i, /\b([13])\s*(?:ph|phase)\b/i],
+      2
+    );
+  }
+
+  if (!result.frequency) {
+    const frequency = valueNearLabel(lines,
+      /\b(?:frequency|frequenz|frecuencia|nennfrequenz|freq)\b/i,
+      [/\b((?:50|60)(?:\s*\/\s*(?:50|60))?)\s*Hz\b/i, /\b((?:50|60))\b/],
+      2
+    );
+    if (frequency) result.frequency = addUnit(frequency, "Hz");
+  }
+
+  if (!result.current) {
+    const current = valueNearLabel(lines,
+      /\b(?:current|corriente|nennstrom|strom|amp(?:s|ere)?|FLA)\b/i,
+      [/\b(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\s*A\b/i, /\b(\d+(?:[.,]\d+)?)\b/],
+      2
+    );
+    if (current) result.current = addUnit(current, "A");
+  }
+
+  if (!result.power) {
+    const power = valueNearLabel(lines,
+      /\b(?:power|leistung|anschlu(?:ss|ß)wert|potencia|input\s+power|rated\s+power)\b/i,
+      [/\b(\d+(?:[.,]\d+)?)\s*kW\b/i, /\b(\d+(?:[.,]\d+)?)\b/],
+      2
+    );
+    if (power) result.power = addUnit(power, "kW");
+  }
+
+  if (!result.capacity) {
+    const capacity = valueNearLabel(lines,
+      /(?:capacity|load|charge|carga|capacidad|capacit[aà]|trocken[\s-]*f[üu]llmenge|f[üu]llmenge|fullmenge|fill(?:ing)?\s*(?:amount|capacity))/i,
+      [/\b(\d+(?:[.,]\d+)?)\s*kg\b/i],
+      2
+    );
+    if (capacity) result.capacity = addUnit(capacity, "kg");
+  }
+
+  if (!result.volume) {
+    const volume = valueNearLabel(lines,
+      /(?:volume|f[üu]llraum|fullraum|liters?|litres?|litri)/i,
+      [/\b(\d+(?:[.,]\d+)?)\s*(?:L|Lt|ltr\.?|liters?|litres?)\b/i],
+      2
+    );
+    if (volume) result.volume = addUnit(volume, "L");
+  }
+
+  if (!result.speed) {
+    const speed = valueNearLabel(lines,
+      /(?:speed|drehzahl|schleuderdreh|velocidad|n\s*max|nmax)/i,
+      [/\b(\d{2,5})\s*(?:U\/min|1\/min|r\/?min|rpm|\/min)\b/i],
+      2
+    );
+    if (speed) result.speed = addUnit(speed, "rpm");
+  }
+
+  if (!result.fuseRating) {
+    const fuse = valueNearLabel(lines,
+      /(?:fuse|fusing|absicherung)/i,
+      [/\b(\d+(?:[.,]\d+)?)\s*A\b/i, /\b(\d+(?:[.,]\d+)?)\b/],
+      2
+    );
+    if (fuse) result.fuseRating = addUnit(fuse, "A");
+  }
+
+  if (!result.ipRating) {
+    result.ipRating = valueNearLabel(lines,
+      /(?:schutzart|degree\s+of\s+protection|protection\s+degree|IP)/i,
+      [/(\bIP\s*(?:X\d|\d{2})[A-Z]?\b)/i],
+      2
+    );
+  }
+
+  if (!result.electricalType) {
+    result.electricalType = valueNearLabel(lines,
+      /(?:stromart|current\s+type|supply\s+type)/i,
+      [/\b(AC\/DC|DC\/AC|AC|DC)\b/i],
+      2
+    );
+  }
+
+  if (!result.heatingType) {
+    result.heatingType = valueNearLabel(lines,
+      /(?:heating\s+type|beheizungsart|heizart)/i,
+      [/\b(Dampf|Steam|Gas|Elektro|Electric|Heisswasser|Heißwasser|Oil|Öl)\b/i],
+      2
+    );
+  }
+
+  if (!result.operatingTemperature) {
+    const temperature = valueNearLabel(lines,
+      /(?:operating\s+temperature|betriebs[\s-]*temperatur|temperature|temperatur)/i,
+      [/\b(\d+(?:[.,]\d+)?)\s*°?C\b/i],
+      2
+    );
+    if (temperature) result.operatingTemperature = addUnit(temperature, "°C");
+  }
+
+  if (!result.kineticEnergy) {
+    const energy = valueNearLabel(lines,
+      /(?:kinetische\s+energie|kinetic\s+energy)/i,
+      [/\b(\d+(?:[.,]\d+)?)\s*(?:Nm|N\s*m|J|kJ)\b/i],
+      2
+    );
+    if (energy) {
+      const joined = lines.join(" ");
+      const energyUnit = joined.match(/(?:kinetische\s+energie|kinetic\s+energy)[^\d]{0,40}\d+(?:[.,]\d+)?\s*(Nm|N\s*m|J|kJ)\b/i);
+      result.kineticEnergy = energy + (energyUnit && energyUnit[1] ? " " + energyUnit[1].replace(/\s+/g, "") : "");
+    }
+  }
+
+  const pressureSpecs = [
+    ["airSupplyPressure", /(?:air\s+supply\s+pressure|druckluft[\s-]*netzanschlu(?:ss|ß))/i],
+    ["airPressure", /(?:air\s+(?:inlet|operating)\s+pressure|druckluft[\s-]*betriebsdruck)/i],
+    ["overpressure", /(?:overpressure|betriebs[\s-]*(?:über|ueber)druck)/i],
+    ["workingPressure", /(?:working\s+pressure|betriebsdruck|zul[aä]ssiger\s+betriebsdruck)/i]
+  ];
+  for (const [key, label] of pressureSpecs) {
+    if (result[key]) continue;
+    const pressure = valueNearLabel(lines, label,
+      [/\b(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i],
+      2
+    );
+    if (pressure) result[key] = addUnit(pressure, "bar");
+  }
 }
 function uniqueValues(values) {
   const out = [];
@@ -959,9 +1163,6 @@ function parseNameplate(text) {
   result.weight = first(normalized, [
     /(?:gewicht\s*\/\s*weight|gewicht|weight|mass|peso)\s*(?:kg)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i
   ]);
-  if (!result.weight && !/(?:capacity|capacit[aà]|volume|trocken[\s-]*f[üu]llmenge|fullmenge|füllmenge)\b/i.test(normalized)) {
-    result.weight = first(normalized, [/\b(\d+(?:[.,]\d+)?)\s*kg(?!\s*\/\s*h)\b/i]);
-  }
   if (result.weight && !/kg$/i.test(result.weight)) result.weight += " kg";
 
   result.refrigerant = first(normalized, [
@@ -1036,6 +1237,8 @@ function parseNameplate(text) {
   result.cosPhi = first(normalized, [
     /(?:cos\s*[φϕø]|power\s*factor|pf)\s*[:=-]?\s*(0[.,]\d{1,3})/i
   ]);
+
+  recoverSplitLabelValues(result, lines);
 
   // Company lines are a stronger manufacturer signal than arbitrary first text.
   const knownBrands = [
