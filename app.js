@@ -1194,7 +1194,7 @@ function recoverExplicitPatterns(result, normalized, lines) {
   ]);
 
   const highConfidenceModelLine = lines.find(line => {
-    if (/^(?:IP|IEC|EN|IM|S[1-9]\b|CE\b)/i.test(line)) return false;
+    if (/^(?:IP|IEC|EN|IM|S[1-9]\b|CE\b|No\.?\b|Serial\b)/i.test(line)) return false;
     if (!/\d/.test(line) || line.length > 45) return false;
     if (/\b(?:Hz|kW|bar|rpm|kg|Volt|Amp|year|serial|No\.)\b/i.test(line)) return false;
     if (/\b\d+(?:[.,]\d+)?\s*(?:V|A)\b/i.test(line)) return false;
@@ -1202,7 +1202,7 @@ function recoverExplicitPatterns(result, normalized, lines) {
   });
 
   const explicitModel = first(normalized, [
-    /(?:model\s+number|model|type|typ)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,4})(?=\s*(?:\n|$))/im,
+    /(?:model\s*(?:no\.?|number)?|type|typ)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,4})(?=\s*(?:\n|$))/im,
     /\b(?:pump|compressor|drive|gearbox)\s+([A-Z0-9][A-Z0-9._\/-]{3,40})\b/i,
     /\b1P\s+([A-Z0-9][A-Z0-9._\/-]{6,40})\b/i
   ]);
@@ -1594,7 +1594,7 @@ function parseNameplate(text) {
     /\b([13])\s*PH\b/i,
     /\b([13])\s*Phase\b/i,
     /\b([13])\s*[-–]\s*Phase\b/i,
-    /\b([13])\s*~\b/i,
+    /\b([13])\s*~/i,
     /\b([13])\s*[x×]\s*\d{2,4}\s*V\b/i
   ]);
   if (/^monof/i.test(result.phases || "")) result.phases = "1";
@@ -1603,10 +1603,14 @@ function parseNameplate(text) {
   result.frequency = first(normalized, [
     /\b((?:50|60)(?:\s*\/\s*(?:50|60))?(?:[.,]\d+)?)\s*Hz\b/i,
     /\b(\d{2,3}\s*[-–]\s*\d{2,3})\s*Hz\b/i,
+    /\b(\d{2,3}\s*\.{2,3}\s*\d{2,3})\s*Hz\b/i,
     /\b(?:Hz|F\s*\(\s*Hz\s*\))\s*[:=~-]?\s*((?:50|60)(?:\s*\/\s*(?:50|60))?)(?=\s|$)/i,
     /\bF\s*\(\s*Hz\s*\)\s*(?:input)?\s*[:=~-]?\s*((?:50|60)(?:\s*\/\s*(?:50|60))?)/i
   ]);
   if (result.frequency && !/Hz$/i.test(result.frequency)) result.frequency += " Hz";
+  if (result.frequency) result.frequency = result.frequency
+    .replace(/\s*\.{2,3}\s*/g, "-")
+    .replace(/\s*\/\s*/g, "/");
   const hasSlashFrequency = /\b(?:50\s*\/\s*60|60\s*\/\s*50)\s*Hz\b/i.test(normalized);
   if (!hasSlashFrequency) {
     const standaloneFrequencies = uniqueValues([...normalized.matchAll(/\b(50|60)\s*Hz\b/gi)].map(match => match[1]));
@@ -2192,6 +2196,11 @@ function parseNameplate(text) {
     ...[...normalized.matchAll(/\bHz\s*[:=.-]?\s*(50|60)\b/gi)].map(match => match[1])
   ]);
   if (finalFrequencies.length > 1) result.frequency = finalFrequencies.join("/") + " Hz";
+  if (result.frequency) {
+    result.frequency = result.frequency
+      .replace(/\s*\.{2,3}\s*/g, "-")
+      .replace(/\s*\/\s*/g, "/");
+  }
 
   return result;
 }
