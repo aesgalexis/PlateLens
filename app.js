@@ -986,6 +986,31 @@ function parseLooseMotorRows(lines) {
   return out;
 }
 
+function parseHeaderNumericTable(lines) {
+  for (let i = 0; i < lines.length - 1; i++) {
+    const header = lines[i].trim();
+    if (!/\bkW\b/i.test(header) || !/(?:1\/min|r\/?min|rpm|min-?1)/i.test(header)) continue;
+
+    const tokens = header.split(/\s+/);
+    const powerIndex = tokens.findIndex(token => /^kW$/i.test(token));
+    const currentIndex = tokens.findIndex(token => /^A$/i.test(token));
+    const speedIndex = tokens.findIndex(token => /^(?:1\/min|r\/?min|rpm|min-?1)$/i.test(token));
+    if (powerIndex < 0 || speedIndex < 0) continue;
+
+    for (const row of lines.slice(i + 1, i + 7)) {
+      const values = row.trim().split(/\s+/);
+      if (values.length < Math.max(powerIndex, speedIndex, currentIndex) + 1) continue;
+      if (!values.every(value => /^[-+]?\d+(?:[.,]\d+)?$/.test(value))) continue;
+      const out = {};
+      if (values[powerIndex]) out.power = values[powerIndex] + " kW";
+      if (currentIndex >= 0 && values[currentIndex]) out.current = values[currentIndex] + " A";
+      if (values[speedIndex]) out.speed = values[speedIndex] + " rpm";
+      return out;
+    }
+  }
+  return {};
+}
+
 function detectFieldPresence(text) {
   const source = String(text || "").replace(/\r/g, "");
   const patterns = {
@@ -1056,6 +1081,13 @@ function parseNameplate(text) {
       /(?:^|\n)\s*manuf\.?\s*no\.?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{4,30})\s*(?:\n|$)/im
     ]);
   }
+  const spacedSerial = first(normalized, [
+    /(?:^|\n)\s*serial(?:\s*(?:no|number|nr))?\.?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]*(?:\s+[A-Z0-9][A-Z0-9._\/-]*){1,2})\s*(?:\n|$)/im
+  ]);
+  if (spacedSerial && (!result.serialNumber || spacedSerial.length > result.serialNumber.length)) {
+    result.serialNumber = spacedSerial;
+  }
+
   result.partNumber = first(normalized, [
     /(?:part\s*(?:no|number)|p\/n|p(?:\/|-|\.)?\s*no\.?|product\s*(?:no|number)|article\s*no\.?|cod\.?|code|cat\.?\s*no(?:\.\/part\s*no\.?)?)\s*[:#.-]?\s*[\[|:_-]*\s*([A-Z0-9][A-Z0-9.+_\/-]{2,40})/i
   ]);
@@ -1130,7 +1162,8 @@ function parseNameplate(text) {
     /\bkW\s*[:=~-]?\s*(\d{1,6}(?:[.,]\d+)?)(?=\s|$)/i
   ]);
   if (result.power && !/(?:kW|W|HP)$/i.test(result.power)) {
-    result.power += /\bTotal\s*W\b/i.test(normalized) ? " W" : " kW";
+    const outputWatts = /\bOUTPUT\s*[:=.-]?\s*\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*[ \t]*W\b/i.test(normalized);
+    result.power += (/\bTotal\s*W\b/i.test(normalized) || outputWatts) ? " W" : " kW";
   }
   result.apparentPower = first(normalized, [
     /(?:rated\s+power|apparent\s+power|rating)\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*kVA\b/i,
@@ -1149,7 +1182,7 @@ function parseNameplate(text) {
     /\bA\.?MAX\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d{1,5}(?:[.,]\d+)?(?:[ \t]*[-\/][ \t]*\d{1,5}(?:[.,]\d+)?){0,3})[ \t]*A(?![-A-Z0-9])/i,
     /(?:current|amp(?:s|ere)?|corriente|strom)[ \t]*[:=~-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)*)[ \t]*A?\b/i,
-    /(?:F\.[ \t]*L\.[ \t]*A\.?|FLAMPS|AMPS?|I[ \t]*\([ \t]*A[ \t]*\))[ \t]*[:=.-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?){0,3})\b/i,
+    /(?:F\.[ \t]*L\.[ \t]*A\.?|FLAMPS|AMPS?|I[ \t]*\([ \t]*A[ \t]*\))[ \t]*[:=.-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*[-\/][ \t]*\d+(?:[.,]\d+)?){0,3})\b/i,
     /\b(\d+(?:[.,]\d+)?)\s*Amps?\b/i,
     /\b(\d+(?:[.,]\d+)?)\s*ampe(?:r(?:e|ios?)?)?\b/i,
     /(?:^|\n)\s*A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i,
@@ -1284,6 +1317,13 @@ function parseNameplate(text) {
     result.weight = first(normalized, [
       /(?:^|\n)\s*(\d+(?:[.,]\d+)?)[ \t]*kg\s*(?:\n|$)/im
     ]);
+    if (!result.weight) {
+      const weightLine = lines.find(line =>
+        /\b\d+(?:[.,]\d+)?[ \t]*kg\b/i.test(line) &&
+        !/(?:capacity|load|charge|carga|f[üu]llmenge|refrigerant|circuit|füllraum|volume)/i.test(line)
+      );
+      if (weightLine) result.weight = first(weightLine, [/\b(\d+(?:[.,]\d+)?)[ \t]*kg\b/i]);
+    }
   }
   if (result.weight && !/kg$/i.test(result.weight)) result.weight += " kg";
 
@@ -1356,7 +1396,7 @@ function parseNameplate(text) {
     /\bINPUT\s+RPM\s*[:=.-]?\s*(\d{2,5})\b/i,
     /\bn\s*max\s*[:=.-]?\s*(\d{2,5})\s*(?:U\/min|1\/min|r\/?min|rpm)\b/i,
     /\b(\d{2,5}\s*[-–]\s*\d{2,5})[ \t]*(?:r\/?min|rpm|min-1|min⁻¹|\/min)\b/i,
-    /\b(\d{2,5})[ \t]*(?:r\/?min|rpm|min-1|min⁻¹|U\/min|\/min)\b/i,
+    /\b(\d{2,5})[ \t]*(?:1\/min|r\/?min|rpm|min-1|min⁻¹|U\/min|\/min)\b/i,
     /(?:^|\n)\s*n(?:\s+fix\.?)?\s*[:=~-]?\s*(\d{2,5})\s*(?:1\/min|r\/?min|rpm|min-1|min⁻¹)\b/i,
     /(?:^|\n)\s*(?:RPM|r\/min|min-1|min⁻¹)\s*[:=~-]?\s*(\d{2,5})\b/i
   ]);
@@ -1647,6 +1687,10 @@ function parseNameplate(text) {
   const motorTable = parseMotorTable(lines);
   for (const [key, value] of Object.entries(motorTable)) {
     if (value) result[key] = value;
+  }
+  const headerNumericTable = parseHeaderNumericTable(lines);
+  for (const [key, value] of Object.entries(headerNumericTable)) {
+    if (value && !result[key]) result[key] = value;
   }
   const looseMotorTable = parseLooseMotorRows(lines);
   for (const [key, value] of Object.entries(looseMotorTable)) {
