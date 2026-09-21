@@ -271,6 +271,82 @@ function makeBinaryVariant(source) {
   return canvas;
 }
 
+function makeAdaptiveBinaryVariant(source, radius = 18, offset = 10) {
+  const canvas = document.createElement("canvas");
+  canvas.width = source.width;
+  canvas.height = source.height;
+  const ctx = canvas.getContext("2d", {willReadFrequently:true});
+  ctx.drawImage(source, 0, 0);
+
+  const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = image.data;
+  const width = canvas.width;
+  const height = canvas.height;
+  const gray = new Uint8Array(width * height);
+  const integral = new Uint32Array((width + 1) * (height + 1));
+
+  for (let y = 0; y < height; y++) {
+    let rowSum = 0;
+    for (let x = 0; x < width; x++) {
+      const pixel = y * width + x;
+      const i = pixel * 4;
+      const value = Math.round(data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+      gray[pixel] = value;
+      rowSum += value;
+      integral[(y + 1) * (width + 1) + x + 1] =
+        integral[y * (width + 1) + x + 1] + rowSum;
+    }
+  }
+
+  let darkPixels = 0;
+  for (let y = 0; y < height; y++) {
+    const y0 = Math.max(0, y - radius);
+    const y1 = Math.min(height - 1, y + radius);
+    for (let x = 0; x < width; x++) {
+      const x0 = Math.max(0, x - radius);
+      const x1 = Math.min(width - 1, x + radius);
+      const area = (x1 - x0 + 1) * (y1 - y0 + 1);
+      const sum =
+        integral[(y1 + 1) * (width + 1) + x1 + 1]
+        - integral[y0 * (width + 1) + x1 + 1]
+        - integral[(y1 + 1) * (width + 1) + x0]
+        + integral[y0 * (width + 1) + x0];
+      const mean = sum / area;
+      const pixel = y * width + x;
+      const output = gray[pixel] < mean - offset ? 0 : 255;
+      const i = pixel * 4;
+      data[i] = data[i + 1] = data[i + 2] = output;
+      if (output === 0) darkPixels++;
+    }
+  }
+
+  // A useful technical-text mask should be mostly white background. Extreme
+  // masks usually mean glare or a dark plate confused the thresholding.
+  const darkRatio = darkPixels / Math.max(1, width * height);
+  if (darkRatio > 0.62) {
+    for (let i = 0; i < data.length; i += 4) {
+      const value = 255 - data[i];
+      data[i] = data[i + 1] = data[i + 2] = value;
+    }
+  }
+
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+}
+
+function upscaleCanvas(source, scale = 1.6, maxWidth = 2600) {
+  const actualScale = Math.min(scale, maxWidth / Math.max(1, source.width));
+  if (actualScale <= 1.02) return source;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(source.width * actualScale));
+  canvas.height = Math.max(1, Math.round(source.height * actualScale));
+  const ctx = canvas.getContext("2d", {willReadFrequently:false});
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
 async function detectBestOrientation(worker, source, onProbe) {
   const candidates = [0, 90, 180, 270];
   let best = {angle:0, score:-Infinity, text:"", confidence:0};
@@ -601,6 +677,53 @@ analyzeBtn.addEventListener("click", async () => {
         }
 
         text = mergeOcrTexts(...bandTexts, text);
+      }
+
+      // Last OCR refinement for dense tabular plates: scan narrow overlapping
+      // rows with SINGLE_LINE. This is deliberately layout-driven and runs
+      // only when important technical fields are still absent.
+      const rowCoverage = extractionCoverage(text);
+      const rowMissingCore = ["voltage","frequency","current","speed","ipRating","operatingTemperature"]
+        .filter(key => !rowCoverage.parsed[key]).length;
+
+      if (rowMissingCore >= 2) {
+        ocrPass = 7;
+        progressText.textContent = "Reading individual technical lines…";
+
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE,
+          preserve_interword_spaces: "1"
+        });
+
+        const rowTexts = [];
+        const scanTop = 0.10;
+        const scanBottom = 0.88;
+        const rowCount = 12;
+        const step = (scanBottom - scanTop) / rowCount;
+        const rowHeight = step * 1.45;
+
+        for (let index = 0; index < rowCount; index++) {
+          const top = Math.max(0, scanTop + index * step - step * 0.18);
+          const rowRect = {
+            left: Math.round(orientedImage.width * 0.025),
+            top: Math.round(orientedImage.height * top),
+            width: Math.round(orientedImage.width * 0.95),
+            height: Math.round(orientedImage.height * rowHeight)
+          };
+
+          const rowImage = cropCanvas(orientedImage, rowRect);
+          const grayRow = makeGrayVariant(rowImage);
+          const adaptiveRow = makeAdaptiveBinaryVariant(grayRow, 16, 9);
+          const enlargedRow = upscaleCanvas(adaptiveRow, 1.7, 2800);
+          const lineResult = await worker.recognize(enlargedRow);
+          const lineText = (lineResult.data.text || "").trim();
+
+          // Ignore obvious empty/noise-only scans before they pollute the
+          // merged OCR text.
+          if (/[A-Za-zÀ-ÿ0-9]{2}/.test(lineText)) rowTexts.push(lineText);
+        }
+
+        text = mergeOcrTexts(...rowTexts, text);
       }
 
       if (needsSparseRetry(text)) {
