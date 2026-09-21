@@ -1335,10 +1335,9 @@ function parseNameplate(text) {
     /(?:gewicht\s*\/\s*weight|gewicht|weight|mass|peso)\s*(?:kg)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i
   ]);
   if (!result.weight && !result.capacity) {
-    result.weight = first(normalized, [
-      /(?:^|\n)\s*(\d+(?:[.,]\d+)?)[ \t]*kg\s*(?:\n|$)/im
-    ]);
-    if (!result.weight) {
+    const motorWeightContext =
+      /\b(?:IP\s*(?:X\d|\d{2})|ins\.?\s*cl|IE[1-5]|cos\s*(?:phi|[φϕ])|rpm|1\/min|min-?1|3\s*[~\-]\s*(?:mot|motor)?)\b/i.test(normalized);
+    if (motorWeightContext) {
       const weightLine = lines.find(line =>
         /\b\d+(?:[.,]\d+)?[ \t]*kg\b/i.test(line) &&
         !/(?:capacity|load|charge|carga|f[üu]llmenge|refrigerant|circuit|füllraum|volume)/i.test(line)
