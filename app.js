@@ -1213,8 +1213,8 @@ function parseNameplate(text) {
 
   result.voltage = first(normalized, [
     /\bU\s*\/\s*VOLT\s*[:=.-]?\s*(\d{2,4}(?:\s*[-\/]\s*\d{2,4})?)\b/i,
-    /\b(?:AC\s+)?Voltage(?:\s+Range)?\s*[:=.-]?\s*(\d{2,4}(?:\s*[-\/]\s*\d{2,4})?)\b/i,
     /(?:Input\s+(?:a\.c\.\/d\.c\.|ac\/dc|ac|a\.c\.)|INPUT\s*:)[^\n]{0,24}?((?:\d{2,4}(?:\s*[-\/]\s*\d{2,4})?))\s*V(?:ac|dc)?\b/i,
+    /\b(?:AC\s+)?Voltage(?:\s+Range)?\s*[:=.-]?\s*(\d{2,4}(?:\s*[-\/]\s*\d{2,4})?)\b/i,
     /(?:^|\n)\s*V[ \t]*[:=.-]?[ \t]*(\d{2,4}(?:[ \t]*[-\/][ \t]*\d{2,4}[DY]?)?(?:[ \t]*\/[ \t]*\d{2,4}[DY]?){0,2})\b/im,
     /\b(\d{2,4}[ \t]*[-\/][ \t]*\d{2,4})[ \t]*V(?:AC|DC)?\b/i,
     /\b(\d{2,4}\s*\.{2,3}\s*\d{2,4})\s*V(?:AC|DC)?\b/i,
