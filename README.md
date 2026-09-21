@@ -44,10 +44,10 @@ The parser is checked against 204 automated regression cases: 50 public hand-cur
 Run the regression set with:
 
 ```bash
-node tests/parser.test.mjs && node tests/mega-corpus.test.mjs && node tests/online-50.test.mjs && node tests/presence.test.mjs && node tests/orientation.test.mjs
+node tests/parser.test.mjs && node tests/mega-corpus.test.mjs && node tests/online-50.test.mjs && node tests/raw-ocr.test.mjs && node tests/ocr-corpus.test.mjs && node tests/presence.test.mjs && node tests/orientation.test.mjs
 ```
 
-See `docs/test-corpus.md` for the hand-curated corpus, `docs/online-50-corpus.md` for the 50 distinct real online plates, `docs/mega-corpus.md` for the 100-case stress suite, and `docs/orientation-corpus.md` for the orientation/pose reference set.
+See `docs/test-corpus.md` for the hand-curated corpus, `docs/online-50-corpus.md` for the 50 distinct real online plates, `docs/mega-corpus.md` for the 100-case stress suite, `docs/ocr-benchmark.md` for real raw-OCR regression cases, and `docs/orientation-corpus.md` for the orientation/pose reference set.
 
 ## Roadmap
 
