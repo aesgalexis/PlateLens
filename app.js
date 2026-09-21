@@ -1888,7 +1888,7 @@ function parseNameplate(text) {
   }
   const headerNumericTable = parseHeaderNumericTable(lines);
   for (const [key, value] of Object.entries(headerNumericTable)) {
-    if (value && !result[key]) result[key] = value;
+    if (value) result[key] = value;
   }
   const looseMotorTable = parseLooseMotorRows(lines);
   for (const [key, value] of Object.entries(looseMotorTable)) {
