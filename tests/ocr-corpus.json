@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "pharmagg-fu1400-raw",
+      "raw": "fixtures/pharmagg-fu1400-raw.txt",
+      "source": "user-supplied real PlateLens OCR output",
+      "expected": {
+        "manufacturer": "PHARMAGG",
+        "brand": "Kannegiesser",
+        "model": "FU1400",
+        "serialNumber": "14200005027",
+        "phases": "3",
+        "voltage": "400 V",
+        "power": "15,5 kW",
+        "electricalType": "AC",
+        "current": "32 A",
+        "capacity": "140 kg",
+        "volume": "1402 L",
+        "workingPressure": "4-8 bar",
+        "overpressure": "10 bar",
+        "airPressure": "6-8 bar",
+        "heatingType": "Dampf",
+        "fuseRating": "35 A",
+        "kineticEnergy": "338850 Nm",
+        "operatingTemperature": "95 °C",
+        "year": "2000"
+      },
+      "mustRemainEmpty": [
+        "frequency",
+        "speed",
+        "ipRating",
+        "airSupplyPressure"
+      ]
+    }
+  ]
+}
