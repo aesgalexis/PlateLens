@@ -1199,7 +1199,7 @@ function parseNameplate(text) {
     /\bp\s*max\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*bar\b/i,
     /\bVacuum\s*[:=.-]?\s*\d+(?:[.,]\d+)?\s*hPa\s*\(\s*(\d+(?:[.,]\d+)?)\s*mbar\s*\)/i,
     /\bPS(?:\/PSs)?(?:\s+(?:LP|HP))?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*bar(?:\(g\))?\b/i,
-    /(?:max\.?\s*working\s*pressure|working\s*pressure|max\.?\s*pressure)\s*(?:bar(?:\(e\))?|psig)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
+    /(?:max\.?\s*working\s*pressure|working\s*pressure|max\.?\s*pressure)\s*(?:bar(?:\(e\))?|psig)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)/i,
     /\bpsig\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\bp\/t\s+(\d+(?:[.,]\d+)?)\s*\/\s*\d+(?:[.,]\d+)?\s*bar/i
   ]);
