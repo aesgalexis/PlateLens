@@ -946,6 +946,121 @@ function recoverSplitLabelValues(result, lines) {
     );
   }
 }
+
+function recoverExplicitPatterns(result, normalized, lines) {
+  // Explicit labelled formats seen repeatedly across motors, drives, pumps,
+  // compressors and chillers. These rules are manufacturer-neutral.
+  const explicitModel = first(normalized, [
+    /(?:machine\s+model|model\s+number|model|type|typ)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,4})(?=\s*(?:\n|$))/im,
+    /\b1P\s+([A-Z0-9][A-Z0-9._\/-]{6,40})\b/i
+  ]);
+  if (explicitModel) result.model = explicitModel;
+
+  if (!result.model) {
+    const codeLine = lines.find(line =>
+      /^(?:ACS\d|ATV\d|6SL\d|DRE\d|ETB\s+\d|GA\d{2,3}(?:VSD)?\b|[A-Z]{1,4}\d{2,}[A-Z0-9._\/-]*)/i.test(line) &&
+      !/\b(?:V|Hz|kW|A|bar|rpm|kg)\b/i.test(line)
+    );
+    if (codeLine) result.model = clean(codeLine);
+  }
+
+  if (!result.model) {
+    const compressorIndex = lines.findIndex(line => /^(?:compressor|screw\s+air\s+compressor)$/i.test(line));
+    if (compressorIndex >= 0 && lines[compressorIndex + 1] &&
+        /^[A-Z0-9][A-Z0-9._\/-]{2,30}$/i.test(lines[compressorIndex + 1])) {
+      result.model = clean(lines[compressorIndex + 1]);
+    }
+  }
+
+  const explicitSerial = first(normalized, [
+    /(?:serial\s+number|serial\s*#|serial|s\/n|s\.nr\.?|no\.?|n[°º])\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{4,30})/i,
+    /(?:^|\n)\s*S\s+([A-Z][A-Z0-9._\/-]{6,30})\s*(?:\n|$)/im
+  ]);
+  if (explicitSerial) result.serialNumber = explicitSerial;
+  if (!result.serialNumber) {
+    const apiSerial = lines.find(line => /^API\d{5,}$/i.test(line));
+    if (apiSerial) result.serialNumber = clean(apiSerial);
+  }
+
+  const trio = normalized.match(/(?:VOLTS?\s*\/\s*PHASE\s*\/\s*Hz|VOLTS?\/PHASE\/Hz)\s*[:=.-]?\s*(\d{2,4})\s*\/\s*([13])\s*\/\s*(50|60)\b/i);
+  if (trio) {
+    result.voltage = trio[1] + " V";
+    result.phases = trio[2];
+    result.frequency = trio[3] + " Hz";
+  }
+
+  const ratedSupply = normalized.match(/RATED\s+POWER\s+SUPPLY[^\n]{0,80}?VOLTS?\s*[:=.-]?\s*(\d{2,4})[^\n]{0,30}?HZ\s*[:=.-]?\s*(50|60)[^\n]{0,30}?PH\s*[:=.-]?\s*([13])\b/i);
+  if (ratedSupply) {
+    result.voltage = ratedSupply[1] + " V";
+    result.frequency = ratedSupply[2] + " Hz";
+    result.phases = ratedSupply[3];
+  }
+
+  const phasesLabel = first(normalized, [
+    /(?:phasen|phases?|phase)\s*[:=.-]?\s*([13])\b/i,
+    /\b([13])\s*Ph\b/i
+  ]);
+  if (phasesLabel) result.phases = phasesLabel;
+
+  const inputCurrent = first(normalized, [
+    /(?:^|\n)\s*I\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*max\s*A\b/im,
+    /\bInput[^\n]{0,60}?\b(\d+(?:[.,]\d+)?)\s*A\b/i
+  ]);
+  if (inputCurrent) result.current = inputCurrent + " A";
+
+  const inputShaftPower = first(normalized, [
+    /INPUT\s+SHAFT\s+POWER\s*\(\s*kW\s*\)\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i
+  ]);
+  if (inputShaftPower) result.power = inputShaftPower + " kW";
+
+  const motorSpeed = first(normalized, [
+    /MOTOR\s+SPEED\s*\(\s*(?:rev\/min|rpm)\s*\)\s*[:=.-]?\s*(\d{2,5})/i,
+    /Motornenndrehzahl\s*[:=.-]?\s*(\d{2,5})\s*(?:1\/min|r\/min|rpm)?/i
+  ]);
+  if (motorSpeed) result.speed = motorSpeed + " rpm";
+
+  const grossMass = first(normalized, [
+    /GROSS\s+MASS\s*\(\s*kg\s*\)\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
+    /(?:^|\n)\s*m\s*[:=.-]\s*(\d+(?:[.,]\d+)?)\s*kg\b/im
+  ]);
+  if (grossMass) result.weight = grossMass + " kg";
+
+  if (!result.weight) {
+    const massLine = lines.find(line => /^\d+(?:[.,]\d+)?\s*kg$/i.test(line));
+    if (massLine && /\b(?:compressor|motor|machine)\b/i.test(normalized)) result.weight = clean(massLine);
+  }
+
+  const pmaxBar = first(normalized, [
+    /\bp\s*max\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*bar\b/i,
+    /MAX\s+ALLOWABLE\s+WORKING\s+PRESSURE\s*\(\s*BAR\s*\)\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i
+  ]);
+  if (pmaxBar) result.workingPressure = pmaxBar + " bar";
+
+  const pumpFlow = normalized.match(/\b(?:CAP|Q)\s*(?:m[³3]\/min|m[³3]\/h|l\/s|l\/min)\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i);
+  if (pumpFlow) {
+    const unit = normalized.match(/\b(?:CAP|Q)\s*(m[³3]\/min|m[³3]\/h|l\/s|l\/min)/i);
+    result.flow = pumpFlow[1] + (unit && unit[1] ? " " + unit[1] : "");
+  }
+
+  const pumpHead = normalized.match(/\bHEAD\s*m\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i);
+  if (pumpHead) result.head = pumpHead[1] + " m";
+
+  const refrigerantHyphen = first(normalized, [
+    /(?:refrigerant|refrig\.?)\s*[:=.-]?\s*(R-?\d{2,4}[A-Z]?)/i
+  ]);
+  if (refrigerantHyphen) result.refrigerant = refrigerantHyphen;
+
+  // Preserve all distinct explicitly marked frequencies when a plate contains
+  // multiple ratings, e.g. 50 Hz and 60 Hz.
+  const frequencyValues = uniqueValues([...normalized.matchAll(/\b(50|60)\s*Hz\b/gi)].map(match => match[1]));
+  if (frequencyValues.length > 1) result.frequency = frequencyValues.join("/") + " Hz";
+
+  // Normalize slash-separated ratings for stable downstream comparisons.
+  for (const key of ["frequency","voltage","current","power"]) {
+    if (result[key]) result[key] = result[key].replace(/\s*\/\s*/g, "/");
+  }
+}
+
 function uniqueValues(values) {
   const out = [];
   for (const value of values.map(clean).filter(Boolean)) {
@@ -1439,6 +1554,7 @@ function parseNameplate(text) {
   ]);
 
   recoverSplitLabelValues(result, lines);
+  recoverExplicitPatterns(result, normalized, lines);
 
   for (const pressureKey of ["workingPressure","overpressure","airPressure","airSupplyPressure","steamPressure"]) {
     if (result[pressureKey]) {
@@ -1534,7 +1650,13 @@ function parseNameplate(text) {
     ["PHARMAGG", /\bPHARMAGG\b/i],
     ["Kannegiesser", /\bKannegiesser\b/i]
   ];
-  const knownBrand = knownBrands.find(entry => entry[1].test(normalized));
+  const knownBrand = knownBrands
+    .map(entry => {
+      const match = normalized.match(entry[1]);
+      return match ? {entry, index: match.index ?? Number.MAX_SAFE_INTEGER} : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.index - b.index)[0]?.entry;
   result.manufacturer = knownBrand ? knownBrand[0] : first(normalized, [
     /\b([A-Z][A-Za-z0-9&. -]{1,35}?(?:GmbH(?:\s*&\s*Co\.?)?|AG|Ltd\.?|S\.?A\.?|S\.?r\.?l\.?|Inc\.?|Corp\.?))(?=,|\n|$)/i
   ]);
