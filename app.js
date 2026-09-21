@@ -965,6 +965,27 @@ function parseMotorTable(lines) {
     cosPhi: uniqueValues(rows.map(row => row.cosPhi).filter(Boolean)).join(" / ")
   };
 }
+function parseLooseMotorRows(lines) {
+  const rows = [];
+  for (const line of lines) {
+    const match = line.match(/^\s*(\d{3,4})\s*[DYΔ]?\s+(50|60)\s+(.+)$/i);
+    if (!match) continue;
+    const tail = [...match[3].matchAll(/\b\d+(?:[.,]\d+)?\b/g)].map(m => m[0]);
+    const speed = tail.find(value => {
+      const n = Number(value.replace(",", "."));
+      return Number.isFinite(n) && n >= 500 && n <= 10000 && !/[.,]/.test(value);
+    }) || "";
+    rows.push({voltage:match[1], frequency:match[2], speed});
+  }
+  if (!rows.length) return {};
+  const out = {};
+  const frequencies = uniqueValues(rows.map(r => r.frequency));
+  if (frequencies.length) out.frequency = joinRatings(frequencies, "Hz");
+  const speeds = uniqueValues(rows.map(r => r.speed).filter(Boolean));
+  if (speeds.length) out.speed = joinRatings(speeds, "rpm");
+  return out;
+}
+
 function detectFieldPresence(text) {
   const source = String(text || "").replace(/\r/g, "");
   const patterns = {
@@ -1030,7 +1051,9 @@ function parseNameplate(text) {
   if (!result.serialNumber) {
     result.serialNumber = first(normalized, [
       /\bserial(?:\s*(?:no|number|nr))?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,30})/i,
-      /(?:^|\n)\s*Nr\.?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,30})/im
+      /(?:^|\n)\s*Nr\.?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,30})/im,
+      /(?:^|\n)\s*serial(?:\s*(?:no|number|nr))?\.?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]*(?:\s+[A-Z0-9][A-Z0-9._\/-]*){0,2})\s*(?:\n|$)/im,
+      /(?:^|\n)\s*manuf\.?\s*no\.?\s*[:#.-]?\s*([A-Z0-9][A-Z0-9._\/-]{4,30})\s*(?:\n|$)/im
     ]);
   }
   result.partNumber = first(normalized, [
@@ -1052,7 +1075,11 @@ function parseNameplate(text) {
       /3\s*~\s+([A-Z][A-Z0-9.+_\/-]{3,30}(?:\s+[A-Z0-9.+_\/-]{1,12}){0,3})/i,
       /(?:^|\n)\s*(LXM62[A-Z0-9]+)\s*(?:\n|$)/i,
       /(?:^|\n)\s*((?:Movitec|Omega|VMS)\s+[A-Z0-9][A-Z0-9 .+_\/-]{2,40})\s*(?:\n|$)/i,
-      /(?:^|\n)\s*(LSHRM\s+\d+[A-Z0-9 ]{0,20})\s*(?:\n|$)/i
+      /(?:^|\n)\s*(LSHRM\s+\d+[A-Z0-9 ]{0,20})\s*(?:\n|$)/i,
+      /(?:^|\n)\s*(ATV\d+[A-Z0-9._\/-]+)\s*(?:\n|$)/i,
+      /(?:^|\n)\s*(ACS\d{3,4}-[A-Z0-9+._\/-]+)\s*(?:\n|$)/i,
+      /\bTYPE\s*[:#.-]?\s*(VFC\d+[A-Z0-9._\/-]*)\b/i,
+      /(?:^|\n)\s*(NL\d{2,3}\/\d{2,3}-[A-Z0-9._\/-]+)\s*(?:\n|$)/i
     ]);
   }
 
@@ -1079,7 +1106,8 @@ function parseNameplate(text) {
   result.frequency = first(normalized, [
     /\b((?:50|60)(?:\s*\/\s*(?:50|60))?(?:[.,]\d+)?)\s*Hz\b/i,
     /\b(\d{2,3}\s*[-–]\s*\d{2,3})\s*Hz\b/i,
-    /\b(?:Hz|F\s*\(\s*Hz\s*\))\s*[:=~-]?\s*((?:50|60)(?:\s*\/\s*(?:50|60))?)(?=\s|$)/i
+    /\b(?:Hz|F\s*\(\s*Hz\s*\))\s*[:=~-]?\s*((?:50|60)(?:\s*\/\s*(?:50|60))?)(?=\s|$)/i,
+    /\bF\s*\(\s*Hz\s*\)\s*(?:input)?\s*[:=~-]?\s*((?:50|60)(?:\s*\/\s*(?:50|60))?)/i
   ]);
   if (result.frequency && !/Hz$/i.test(result.frequency)) result.frequency += " Hz";
   const hasSlashFrequency = /\b(?:50\s*\/\s*60|60\s*\/\s*50)\s*Hz\b/i.test(normalized);
@@ -1090,6 +1118,8 @@ function parseNameplate(text) {
   if (!result.frequency && /\bH[eEz]\s*\[\s*S[O0]\s*\]/i.test(normalized)) result.frequency = "50 Hz";
 
   result.power = first(normalized, [
+    /\bkW\s*\(\s*(?:HP|HP-cv|CV)[^)]*\)\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
+    /\bOUTPUT\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)[ \t]*W\b/i,
     /\bPower\s+LD\/ND\/HD\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?){1,3})\s*kW\b/i,
     /(?:^|\n)\s*(?:kW|KW)[ \t]*[:=.-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)*)\b/i,
     /\bkW\.?MAX\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
@@ -1113,9 +1143,11 @@ function parseNameplate(text) {
   ]);
 
   result.current = first(normalized, [
+    /\bI\s*\(\s*A\s*\)\s*(?:input)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*[\/-]\s*\d+(?:[.,]\d+)?)*)\b/i,
+    /(?:^|\n)\s*A\s*[:=~-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\b/im,
     /\bAmps\s+LD\/ND\/HD\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?){1,3})\b/i,
     /\bA\.?MAX\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
-    /\b(\d{1,5}(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d{1,5}(?:[.,]\d+)?)*)[ \t]*A(?![-A-Z0-9])/i,
+    /\b(\d{1,5}(?:[.,]\d+)?(?:[ \t]*[-\/][ \t]*\d{1,5}(?:[.,]\d+)?){0,3})[ \t]*A(?![-A-Z0-9])/i,
     /(?:current|amp(?:s|ere)?|corriente|strom)[ \t]*[:=~-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)*)[ \t]*A?\b/i,
     /(?:F\.[ \t]*L\.[ \t]*A\.?|FLAMPS|AMPS?|I[ \t]*\([ \t]*A[ \t]*\))[ \t]*[:=.-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?){0,3})\b/i,
     /\b(\d+(?:[.,]\d+)?)\s*Amps?\b/i,
@@ -1142,6 +1174,9 @@ function parseNameplate(text) {
   }
 
   result.voltage = first(normalized, [
+    /(?:^|\n)\s*V[ \t]*[:=.-]?[ \t]*(\d{2,4}(?:[ \t]*[-\/][ \t]*\d{2,4}[DY]?)?(?:[ \t]*\/[ \t]*\d{2,4}[DY]?){0,2})\b/im,
+    /\b(\d{3,4})[ \t]*[DYΔ]?[ \t]*V\b/i,
+    /\b(\d{2,4}(?:[ \t]*\/[ \t]*\d{2,4}){2})[ \t]*V\b/i,
     /\b(\d{2,4}\s*\.{2,3}\s*\d{2,4})\s*V(?:AC|DC)?\b/i,
     /(?:^|\n)\s*(?:VOLTS?|V\.)[ \t]*[:=.-]?[ \t]*((?:\d{2,4}(?:[ \t]*[-\/][ \t]*\d{2,4})?)(?:[ \t]*\/[ \t]*\d{2,4}(?:[ \t]*[-\/][ \t]*\d{2,4})?)*)/i,
     /U[ \t]*\([ \t]*V[ \t]*\)[ \t]*[:=.-]?[ \t]*((?:\d{2,4}(?:[ \t]*[-\/][ \t]*\d{2,4})?))/i,
@@ -1245,6 +1280,11 @@ function parseNameplate(text) {
   result.weight = first(normalized, [
     /(?:gewicht\s*\/\s*weight|gewicht|weight|mass|peso)\s*(?:kg)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i
   ]);
+  if (!result.weight && !result.capacity) {
+    result.weight = first(normalized, [
+      /(?:^|\n)\s*(\d+(?:[.,]\d+)?)[ \t]*kg\s*(?:\n|$)/im
+    ]);
+  }
   if (result.weight && !/kg$/i.test(result.weight)) result.weight += " kg";
 
   result.refrigerant = first(normalized, [
@@ -1252,7 +1292,7 @@ function parseNameplate(text) {
     /\b(R(?:22|32|134a|290|404A|407C|410A|448A|449A|452A|454[AC]|507|513A|600a))\b/i
   ]);
   result.ratio = first(normalized, [
-    /\bi\s*[:=]\s*(\d+(?:[.,]\d+)?)/i,
+    /\bi\s*(?:[:=]|\s)\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d+\s*:\s*\d+)\b/
   ]);
 
@@ -1267,7 +1307,7 @@ function parseNameplate(text) {
 
   result.head = first(normalized, [
     /(?:^|\n)\s*H\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?)\s*(?:m|metros?)\b/i,
-    /\bQ\s*[:=.-]?\s*\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?\s*(?:m[³3]\/h|l\/s|l\/min|lts?\/hora)[^\n]{0,50}?\bH\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?)\s*(?:m|metros?)\b/i
+    /\bQ\s*[:=.-]?\s*\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?\s*(?:m[³3]\/h|l\/s|l\/min|lts?\/hora)[^\n]{0,50}?\bH\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)?)(?:\s*(?:m|metros?))?\b/i
   ]);
   if (result.head && !/m$/i.test(result.head)) result.head += " m";
 
@@ -1281,7 +1321,7 @@ function parseNameplate(text) {
     /\bp\s*max\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*bar\b/i,
     /\bVacuum\s*[:=.-]?\s*\d+(?:[.,]\d+)?\s*hPa\s*\(\s*(\d+(?:[.,]\d+)?)\s*mbar\s*\)/i,
     /\bPS(?:\/PSs)?(?:\s+(?:LP|HP))?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)\s*bar(?:\(g\))?\b/i,
-    /(?:max\.?\s*working\s*pressure|working\s*pressure|max\.?\s*pressure)\s*(?:bar(?:\(e\))?|psig)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)/i,
+    /(?:max\.?\s*(?:working|work)\s*pressure|working\s*pressure|max\.?\s*pressure)\s*(?:bar(?:\(e\))?|psig)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)/i,
     /\bpsig\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i,
     /\bp\/t\s+(\d+(?:[.,]\d+)?)\s*\/\s*\d+(?:[.,]\d+)?\s*bar/i
   ]);
@@ -1366,13 +1406,14 @@ function parseNameplate(text) {
     ["VEIT", /\bVEIT\b/i],
     ["Barbanti", /\bBarbanti\b/i],
     ["YASKAWA", /\bYASKAWA\b/i],
-    ["Schneider Electric", /\bSchneider\s+Electric\b/i],
+    ["Schneider Electric", /\b(?:Schneider(?:\s+Electric)?|Telemecanique|Altivar)\b/i],
     ["KSB", /\bKSB(?:\s+(?:B\.V\.|SE\s*&\s*Co\.\s*KGaA|Pumps?))?\b/i],
     ["Sulzer", /\bSULZER\b/i],
     ["Leroy-Somer", /\b(?:Nidec\s+)?Leroy[\s-]*Somer\b/i],
     ["Copeland", /\bCopeland\b/i],
     ["EBARA", /\bEBARA\b/i],
-    ["Alfa Laval", /\bAlfa\s+Laval\b/i],
+    ["Alfa Laval", /\bAlfa[\s-]+Laval\b/i],
+    ["Fuji Electric", /\bFuji\s+Electric\b/i],
     ["Festo", /\bFesto\b/i],
     ["GEA", /\bGEA\b/i],
     ["BLOCH", /(?:\bBLOCH\b|bombas?h?bloch\.com)/i],
@@ -1606,6 +1647,16 @@ function parseNameplate(text) {
   const motorTable = parseMotorTable(lines);
   for (const [key, value] of Object.entries(motorTable)) {
     if (value) result[key] = value;
+  }
+  const looseMotorTable = parseLooseMotorRows(lines);
+  for (const [key, value] of Object.entries(looseMotorTable)) {
+    if (value && !result[key]) result[key] = value;
+  }
+
+  if (result.manufacturer === "SEW-EURODRIVE" && !result.model) {
+    result.model = first(normalized, [
+      /(?:^|\n)\s*((?:R|K|F|S)[A-Z]?\d{1,3}\s+[A-Z]{2,}\d[A-Z0-9._\/-]+)\s*(?:\n|$)/i
+    ]);
   }
 
   return result;
