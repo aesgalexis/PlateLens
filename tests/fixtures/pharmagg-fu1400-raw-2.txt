@@ -1,0 +1,843 @@
+LA                                         .        i
+PHARMAGG                  |        ME.
+S YM TEMTECHNIK GMBH                     |
+Nannegiesser:- Gruppe                     a     e |
+D 27318 Hoya                         |         : |
+2                          Typ       - FU1400
+et           Fabr. Nr. | 14200005027 | =
+|         PARC ER                  |                |
+E.      > [E.14.2000.]. Sem adh © TT Tae        |
+‚Schaltplan Nr.    05.027    *— Fullraum        1402    tr. —-
+| |   RG  “E           > zul.Trocken-      eN,
+¡Nennspannung           V   fullmenge       140    kg
+i Na o            Schleuderdreh          i
+2  Nebfrecuegz            Hz --zahl n max             U/min .
+> I RE  Vg gs     As      . Kinetische-          a         -
+MeStromart y - >> AC < | Energie .      338850 |Nm  |
+N * O Drückluft-  a              |
+4  Nehnstro £2    32 |A. Netzanschluf 90 bar | i
+a + fit     ee      — Druckluft —                    ol |}
+' Anschluß: ert |  15,5 Kw ‚Betriebsdruck *   *       bar
+TAbsicherung'  5 . Beheizungsart | Bamer |    |  |
+PT          -  zul, Betriebs- Ds
+'Schutzart            ..-- temperatur           °C.
+AT         ‘= zulássiger ‘ ina  '
+5    |        Z|             ” Betriebsdruck               bar .
+i      5    | i       |  “zul. Betriebs- |      bo Y  i
+i             5                            1             a                    tiberdruck |           10             bar |
+A
+Rannegiesser'- Gruppe
+D273  8 Hoya
+E TER or
+45
+TEMTECHNIK- GMBH
+rn
+Iinnegiesser"- Gruppe
+27318 Hoya
+Typ
+Er
+di
+4
+Ha
+ps
+ri
+i}
+E
+E.14.2000. |
+5.02;
+m.
+ÍA
+“
+TA
+i
+L
+o
+1.
+=]
+|
+y
+on
+|»
+Ad
+&
+Le
+e.
+wl
+è
+Nannegiesser’- Gruppe
+{  a a x |
+-         N                       3        <i            y
+CHNIK-
+ı Kannegies        GMBH
+WESSET - Gru
+D 27318 H                      ppe
+Ta        oya
+vs         ‚cr           |       "
+O EP. ae ON           |          T
+E     OS       NP.
+E i A. Pe ‘  >   #               E    i
+BE ao SE CO           |        i     fl, gn
+i      e.                         3                e               3
+Ee BN            NY         , Mai glare
+[PE To         .    aaa an PER A
+,       ESTA Re E E                  Ya MA NN My ‘4
+fi — BA: TES     .     Cg A ENT  E
+aa EN BE SE on pS     © EEN  age! Bau si
+a A 0 Cg Ea Me ER            CL ERE Si  Ke NIC
+TS ES. CE  TE           a A E  NOS
+* ISchs Ei  ED  E. 14.2000 |    E
+E ww 5   A.   "a «Me J E  as  A a     -         Y   ¢
+PER      ee Ira
+:        E en    RY               ME DESDE    — Thi       i      ra
+CTE         ET NM.   |
+INC NNSDHann       - a      sf Me       40 ES
+Nennspannung | 3 X 400 |,    2ul.Tro
+3                -   Vv 2 |)         a
+v                 o «date CA       i “Alga
+x                LE    — 1       Tully
+E                          ELE A ES  i         ITC [
+\     5    ©       Neg   :     Casan
+E  -zahl
+oma                    |     Kinetis
+,               af       : E eu
+Strom            3               ruck
+.      i       | A          X
+e EDO             ‘         VO                        2
+psichert n       {gl                      3
+fio TA ET         —                          i
+de WAR      i                            5
+rk EYER    > _L  os   e   La     sE                        2    Lie
+ui Schutzart As A      =A          ZUl. Bi
+UTE Eu             temper
+A" SL   Ta 2. ENE     y                         >         3
+FE. SNE A   Na
+E en E i    ;                    LA
+Wi agi PE  A    -
+EN 7 Ams                    :
+deh, Er. UA E
+PEAD 8 CE sad
+E E         e        i
+EEN AT E      poe
+e            e Eire           E.                    Tel    ii
+Typ       + FU1400
+Fabr. Nr. | 14200005027     i  i
+:   ul. Trocken-       Rann Al     |
+füllmenge        140     kg    |
+Schleuderdreh       Po
+z --zahl nmax             U/min |
+. Kinetische-       |]       i
+Energie       338850 INm |
+o Druckluft-                  a
+- Netzanschluß              bar...
+Druckluft       . |
+N Betriebsdruck ‘     6 -8 bar |
+— Beheizungsart | Da            |
+zul. Betriebs-  es       |
+- temperatur               Co
+zulássiger    4-8  |   |
+Betriebsdruck             bar   |
+— zul. Betriebs- omo  |
+überdruck                bar |    as
+o LE   de   |
+/            \    i    -          .
+3     ;       è
+Fabr. Nr.
+Baujahr
+fens]
+1402
+ltr
+Fúlraum |
+zul. Trocken-
+140
+füllmenge
+440 o
+Schleuderdreh
+-zahl n max
+Ui
+Kinetische-
+Energie
+_338850 |
+Druckluft-
+Netzanschluß
+Druckluft
+6-8
+Betriebsdruck *
+bar
+Beheizungsart
+zul.  Betriebs-
+temperatur
+°C
+zulassiger
+Betriebsdruck
+ue io
+überdruck
+a 3 te  mnt   ——] J
+/
+a! ARMAST -
+TEMTECHNIK-GMBH
+(Annegiesser”.    Gruppe
+lo 27318 Hoya
+x
+La
+“4
+fe,
+PU.
+* q
+an
+Nes!
+Us
+1 ay
+ra
+14.200
+05.02
+Ira
+da
+Zul
+os
+40
+nN
+“A
+[4
+Ax
+Al |
+Kine:
+A |
+olp
+[J
+KIL
+ir
+st
+Vay
+Ce
+"
+el
+Ti
+Mu
+7
+UD
+pu               .                                                  Bb AAG DAA      “VIANA RES CIR
+.        PN                          a                               À     AN     E. ES EE A
+r     |   \                                                     ¢    Ni es 2    Dn izan   E E  BE
+“7 a TEMTECHNIK-G MBH                             prays oF
+è   |           -             -        A        FAROS O    aE   E Xx
+Kannegiesser'- Gruppe                             Te -. |
+NTE   EE MAT
+D 27318 Hoya                     i                             8      La
+-   i                                                                         È     AT La TS A
+d          i           LA                   ¥           ®        §                              b    3 Y np 57d  ? e  de ©         7
+2                                                  .  Typ                       A A   a)   ROLE A   E    Los
+a    yd             i                    $              .         A        DERRY TET >. RE Tae    Ri
+è        TOE J   |   SEN        y    EA       !        do    a Re
+E Ne       >         > va LT 2 E  i
+RE 4       5                     y       a   ;   Dee, RE RY ae RS
+LEE Le Teg SE               ~~. Fabr. Nr. | 142000! DYU27 | +
+ET wl            y          + a ADC, | A
+BU     =        4       Us     “A    REA ea ROUTE > E E
+gas e      «    4    >          a    Sonn ERE A AA ERAN OEA EA A
+Tal A ef.           x    REN SUE A E a Eu A  } A E E
+x          ANTAS   be, NS               X    si     A EA E   a E  + AE   NN    Fv the DA |
+BR     pr Lo MT, O"  va    4      Een      PANI E >» al na a  A wl 36 Yi 200  De BE lo fi, | Man
+Zn NP. va TON     A      er NR du IE a SA 19 MER TE |. TE TE AT | ET
+pue     Asi
+A       FATE       aa   ~
+o        5 |     Pa    x   =    NO  E 0 Man
+fo rd r  5   ARNE wR PF ft ma E
+Tes AA   Schutz   “e  a  vost Coa PR TE NY 18
+Aegis  oa    ng o “E     A Ear    Ne E Pa   bi    AA
+E    Pc A AR),    Va FA    Ea    nthe A sha
+Ne   “e    A     3   i  Zi ree dir E E Sarl e A           gp La   è    >.
+i   ii Lr f    RA poe et  g  eratur ore:  sR      :         — ll
+e TN    è    Ea Pa TI  = O ME SA rieti pe Ge fa  EN,   fa a
+i   FE MUY   3   up or A E I  LU old FS ded Cad “ia Li             ¥ °C  - EE LAS su
+;                     Pa TEL EE  EN 10 ak a    A   pr    i -       ah       $        ME a   Ea
+Ce i     Urea A Ls ds UE Po —zuláss e men - PR    ¡E J
+A       SLRS    Fag   ” ETA A AAA E RAE iger | ig fis PS Gg   2: a Ea us
+Fins   i     (ED Sr By LE     — Re  - DELUNCDS   ie]     TA A RA FEE AE
+Bie               è    ERE    Ju SEE =m La EN AA  O Pos!  Regd O Bis Na te, TF © e
+TA      a     WE “Ei   j     bay ei  iad ~~ hg i Fo Til ME  Pr —— EUA  pal E
+È      3    EZ       DD e E   ME a    Da  Ae ge My, rom II |   REZA Na pha  Ry “QU En
+ue   © Bev    y  EDS 4 AN Ul. DE triebs- E compares, A au oe PE
+AA     ;   >      E RO   (us   CEE E   X    >   TT rc TS  =    Ba i  BZ E  pe
+¿E    X      ¡ENE E E. of a dre X  Bar NH ro e ; de Te A   i fi a i
+TNR he Za      e          SU   =   ie   3  A Le ee Pac de E.
+4 > ora    A Tp
++                ME => md Bao CON E Na   e   bo. PE AE | har Ted A  he
+;       A    RD e WE se      Ta BEA
+i             WA E  me ART gi inn mio E ”=    RPE og eS RO i  Bq
+>           ai a       WESER E EL ET
+ZA      N    LER i   Ce                                 ;    ; » a
+:             Cee NN PEA  PE IC                                        X    Fate Foon E Y
+E      i        : hh:  -     e         :                                         i To E Ue E E
+E a  i     AE                                                 Eo Sy Le Wm “
+Ea?          Gr  a LEN   my          a                                                       e - acy   Na
+Ta       :   Eee i         Tad                                            TL Ea a i
+¿ZA UR          a                                         SE A CA
+Ros)                                              Eo Sn ve Ba
+E  a 3
+ibe oo PE
+SPP CREA
+a A ea. so
+e ook E. Eu Lo
+TOD 9 Ps
+Es.    ‘   ione            - RIISUSUI IS           y         |
+A Svomart i "AC | Energie | 338850 [fm |
+EN 4° RE en +     |      “ Druckluft -                "e
+A |   Nehnstrom e    32 [A . Netzanschluß          bar. Ja:
+¢   =  LT          Druckluft       i       : |
+_\Anschlußs ert >            KW Betriebsdruck -   5 -8    bar -— 1
+TAbsicherung             A Beheizungsart    Dampf. -      |
+LA :     zul. Betriebs-  Fe      |
+“Schutzart                    temperatur              °Cy wil
+PEA    Er     1   INA Mein         |    |   x
+ANI ISUSUI IE
+EE +
+btromart x
+“ AC <<
+|   338850   Nm
+diet
+8 A
+Netzanschluf3
+Anschluß   eit
+155 Jw
+Ne)
+Absicherung | 35a
+Jampf
+zul. Batriebs-
+Schutzart
+— se
+Fe |
+| 11 lAcciNar
+ñ ¥        LI        Py  x                    La       >             | &
+|      e   i    -  Baujahr    |  2000 |  j    a
+AI    >|E.14.2000.]:.:= 4 a 6 als     f
+| |Schaltplan.Nr. | 05.027 | * * Füllraum       1402 ir. “
+Zn |  eto I       *  zul Trocken-    BCAA
+¡Nennspannung             V    fúllmenge          140     kg
+wx  Nehnfrequenz          Hz - -zahl nmax           U/min |
+. MA era     =    EA Re
+y MU  al     a      - Kinetische          ur         |!
+GUS ACE | Energie. 308880 [wm |
+ES
+u
+|     2000     |
+iy
+Setter E e
+Füllraum
+*
+e:
+| Nennspanoung -
+fullmenge
+0 lio |
+Ea
+-zahl
+n  max
+Umi
+Ne  nfreamagz
+Stromarts
+~ AC ¢
+| 338850 Nr
+ce A
+n
+M
+[ey
+To
+TEMTECHNIK--GMBH
+ot
+Rannegiesse: er-
+Gruppe
+Hoe
+D 27318 Hoya
+FU
+..
+| SE
+11
+“u
+Ro
+WERE ITS:
+un |
+4:44
+fo
+ox
+14.
+x,
+at
+LN
+SE
+re
+"jo
+GLY
+Ny
+of
+Ve
+CR
+"a
+>
+y E
+”
+3
+al
+1"
+av
+DO
+Fe
+Pe
+pea
++   E   t
+ei
++95
+°C.
+»
+pl
+chu
+TT
+as
+TM:
+hy
+he
+ie,
+de e
+5
+igh
+q
++
+=D
+“>
+ES escondo
+Ka
+AED TT
+vr
+ña
+ZE
+su
+1  ot
+LJ
+Te
+Er pa
+[3
+der
+i]
+«È
+Peli.
+En
+Na
+“ño
+uu
+Me
+8
+Les
+‘A,
+wi
+xP
+a;
+PHARMAGG |
+SYBTEMTECHNIK GMBH
+Kannegiesser‘- Gruppe
+r
+-
+i .
+4.2000.
+{
+Schaltplan Nr.
+W
+É
+ng‘
+xa Jy
+Nen ns
+pan
+nu
+40 Jw
+.  Ne nf
+quenz
+Ci
+Stromart «    >
+stro
+[=
+Netzanschlufs
+=
+15,5
+kW
+AnschluRwert
+Betriebsdruck  i
+35
+Absicherun
+| Dimer |
+1
+Low le
+"schutzait
+zulässiger
+fio Bo)
+|  10 - |
+campa
+BR
+MAG
+TEMTECHNIK-GMEBH
+Ue
+| Kannegiesser-- Gruppe
+'D2
+18 Hoya
+{A
+AM
+FU1
+JP)
+Co,
+10
+4200
+02
+Fab
+Om
+[as
+Jig
+20
+0
+iy €
++ ef
+Ney
+—|E.14
+.2000,
+Co
+Un.
+i:
+fs
+ne
+or
+lim
+TS
+E,
+ar
+| n
+iil
+gi
+ye
+"E
+Jd
+oma
+REE
+Li
+| U
+Cl
+“E
+po
+Sdr I
+©
+Tes oo
+RR
+di,
+DS
+| Vay
+a Ah
+Teo
+it
+pu:
+Is
+ue:
+Pag
+y 27   8 Hoya
+CA,
+‘ag
+A]
+SRS
+“3
+“*
+we
+fa fi
+nH
+to,
+ke
+«
+~
+pr
+01010
+ANN
+*.
+iF
+wy
+Gl
+ML
+00
+<>
+.
+—
+%
+y. —
+Ae
+fn
+E.14.2000
+ac
+of.
+ISS)
+— 05.02
+lc
+um
+4 2
+ul
+ale
+|]
+Ai
+er:
+E <
+ill
+GEL
+“È
+Vv
+Je
+Me,
+NT
+NAS
+e pu
+A|
+reh
+DOU
+an|
+)
+pil
+€
+1H.
+>h
+UR
+IQ
+np
+lo
+r li
+ou
+<a
+FEA
+ws HY
+ALS
+$i
+- y
+D;
+14
+15
+„|
+rs
+ER WEL
+tar
+===
+bi
+5.
+gh
+son
+#
+‘eo
+Aa!
+hs
+1971
+ka 7
+vl
+2,
+os.
+b
+19
+od
+de
+PAS
+Rae
+28;
+2
+sa
+PJ
+AP
+yp
+Ls
+hi |
+NAAR
+ee a
+[i
+RR)
+{SYWTEMTECHNIK GMBH
+. Kanneyiesser'- Gruppe
+'D 27318 Hoya
+Y:
+. FU
+. 4
+\
+a.
+Fabr..Nr.
+420000502
+1”
+Ex
+Sri
+Fa
+2000
+NN.
+. >
+dt
+114.200
+vi
+Jie
+FL
+ie
+hi
+wi &
+gv
+mi
+va
+e i
+pus;
+MEL TEO A
+FT
+pa
+fi
+{3
+BE ed
+ÓN
+UTE
+yi
+RATA
+Li i
+#3
+‘a
+o¥
+WS,
+3%
+a,
+x:
+dz
+s
+7 o Moya
+»           .
+| x
+‚Schaltplan Nr.
+05.027    |
+Füllraum |
+2ul. Trocken-
+|Nenispanpun
+g
+xa y
+fúllmenge
+140 o
+¥
+LU
+F
+4° E
+nece
+i © AC  <
+Stroma «
+Anstro
+| 10 foe
+Anschluß@ert
+{Absicherung
+sl
+'schutzat
+Low e
+bat
+il
+Hy                              es
+==            SA
+A a         :             e NON
+o                                  Ae AE Lo DEE   e              i       MZ
+E yA Eo ue                  TE
+N      —               TT
+go                                              i                                   :    i  a  x        i  AN      1    E e)  EST   ñ E
+AID INTE          a                                  Pata O. FL
+| =        PAN |                                                                       TZ        i       AL Ea
+|      q    |                                                            .          "e O   .     €      + EE  BA o
+\               \     :      BH                                 TA       >. e. IF AE
+EA | SYS TEMTECHNI o   e    i                             BEE y E  >  e kE PE
+Rr   E       -         *- Grupp                                 E A "o.
+"       nnegiesser                                                   :       A       a.
+:                                          A            SEN      i  E ED    PE    e
+UNA ETRE ST TUE NA                                                              re  Gaal È: oe Tanti OPE E
+è                          x                         FRG TTL    PE E Rar
+D 27318 Hoya         i          '          -              À                     SUL e
++                  y                         3     Ra   AVE ol Se a
+A                                                           J 1400. + A
+PA                              y               ‘                Ns       A AAA 4 SE
++    et                                                                                 7. MA    e   So RE A    fou ae EN Len
+ay    Y A        ,                      .         I                      e" LE     y AA  SA A
+:        is              Tas                    .  Typ 1         -       —     — ba wk A
+j               i       *       !     > TR Le be 5 NO Caw
+d             +                y    ur   fi    he   :   z   ;   a  LN SPR > © VISI OA  i“
+i          i               ‘                                  E            ATR Al      IE E Aa SE
+Fa   DS a     ,     Ea        “                   FR     y          o          Can       :     Ka Goo Cu Jee ea
+.               ions MG            .              y                È      al        | AA         10    È     ASA N SE HE
+è    4                                            x     %     ¿ 125: CHA    D               Une ESTE APTOS  RESTA   A
+TE aa he LN "a    *      Les               LN a ye wh za pi N  pol il      —     EU — 2 ih SV  E LISI
+4    E        EE Y    SI    :                              "e ME <A ra  ad EG, pena DA E Mak E   EE
+y       a UPA            “Y       “a al O. i Winger Es A cE a  Tu jo E.
+e      e                     a     ina VE Ma LA    LEE     Figs          Ear SP Fie
+A TN :    Pd aR         » Ri 2 AEE RUE Eo | 200 U | EP 0 i E ai
+i            i    To el                x       Ta EY  Nair Rare es Am        EE a
+N    T    4                    3    de     Ag EAN aulahr  EL IE A   a    E UREA  gia     2
+Tal ME pa. SO N          y   E. AA Daujal| J SRE =  AI 5 <1 TF.   dg È      a
+ii      Ea AT  a     -   è       AA  4 a.   e NA  UN ame     al Ay Ex  i
+E       LX EA.        EL         7 + Mea        A ORAR
+HU NC UPA ROE           000. |: os              LTR E SE Mo AIN: A    i
+fa   | do © A Le. NON E, 14.       PE     |    è       3      FER BRE |   Lohans al ERE ye E    X
+Zu A     i  ~ og as      | a UP   A,    ES    3    -        L  (¡MZ CER BE   VS a ME
+A Se  ¡E     1    E       -Ulraum << |.  — A     i
+FCT O AN ARLE  e 05 02  ga    f                BO    TA. th nary rar —  e tate Ry a    a    j
+RAR  | 05.027 |        SES [mA e ME
+x boe ».  due %     -— A E     x   oul Tracke n- agar    an  LTT a  Bie   En
+BPE PE  Cog   ME              —    EE È   |    ITOCK!   i Fs a AA A AN  SRE ar Oe DS RN
+¡uo A > og         i |. Vago Th Eo  Y      zul. |     5 MUDO 140 ka ER
+Sal ES  EU   ne e Se         “a A PA     sf               es      wa FER ME ar BL brs RY   ove E     i;
+LA   -   PEA    PEDO NAAA o NY                   Ea     EA      a     xX          Ee  In Fo    Ne BE OSP SA] i Ra  SEER i      da   des E    sa Wie
+el     aE Led                  3x4  JO    V         llr nen gc Ze ods e — o e     i
+| Nennspannung | 3 x 400 |y             on TS ol al
+Nennspc          e o E Ny        ae    A rdreh |        SAS ae TRE E  y             A
+Ev    :         Na e o Ao       Set euderdren Epa  NET  4          5
+i                  5      OL rpm? a      al        i           CIT cud e Ae      A a    ii) An § Ba IL  min |
+i                                       3                 ie TR A IX |  ~~ 00VU | HHT       AA
+U                    í            -            ene       zahl nmax |    E Sa            Sa             #
+AK                    $               à          H7      -Zaril    ALI        Dn E es - E         E
+ZA    nc                    a    Pa    n es hy sua 47 J                    7   Ea
+#1   r     SCHE             y   eYo          { en SN                  i
+:          Kinet                  90090 | Nm                  :
+—     tz                                  —             cy SE gE
+nergle               EEE EEN A  E.      a AC
+igh us                      —   ows mene |   e              FICA
+:                                |        è,                             >    PECES E   e    È          Fok    4
+As                                   i                 Ei                    sen La                Nee
+WE                                                                            -    CKILITI               3                CNET             5    =
+o                         r                                            UCKIU               |           10 anal      "Dar :
+nv   ra    Pong
+N      enh |  IL           e  e  00 UN Sa        3
+i            A           cladliioll ul,    L       BEES LEN  A            y
+$ /        f                     ;    Dr      AU VIZI E |    uu     è
+trom           1                          i      E         ED fa de Y    e  pa
+4                                                        ruckluft      |   j   WA    ANA i
+\                                         i                                      | UCN      De         i    La 6   - 0    I bar wid. I
+re                                          |                 etriepsaruc Nw]       fir    a
+a     Anschluf        1      e    EN El EA. E
+O       ASCII           y                                :                 E    ER   x    e
+UC                   Naa ON                                                                            È           1)A]   io)   Ber     Ae MENO
+a          RATA Et        è    f                               Syd       3 TR   EE
+E              me AO 7                                             ¡eheizungsar       E LN ear
+ee       y         Ra    E              +       4                       1 11     =    y          "METAS    pipi A
+i    a i     | A SI de  A         1                                          è          E         7 RENE CY     Ea A            e
+—          CR EE  |                                              y         E             EN  BR A
+Ti         i      Abs(cherur          vz                                  Y                  E TF A     ue
+A       Do              p=                            il Bet!              Ta Y ME SE         A.
+Le                 TA           x                           EU    A                 SEL lo NEE IL) O
+e         y TS       ES                   > En           ER
+-  od  PL IRE       |          ZA               ten      | C                 pra — Ra    :                    »
+BEN   Se SAID     i                                                  ;         PER Gant A he Sh
+E Me e SCHUTZ: > E                            TE    Je      1     A ©    ,                AL
+Eu  Pu   E  ya 2      A                          y                       e    a                    E
+hE, EC AR. TO  E,                                                    L       weds TUE              :      E SI
+BE Re    7 + at Cm                                                                                     Sad E    pe
+Set  Aa BATES    NET                                          +riah:         ú              E           Na LO AE
+EOS US ¿ÓN                         |        [EDS          >       az          E a
+A >     AA   un    de     rr               i                                                          .                  EE dá    %
+el An Le Br Of SR  E             A                                                               Se AE
+Ne BA  e. A a  E            :              uberc    .                    y    ;              SE Lh Te
+= 0.00 E. Ty      ETE SO              a        E                  a       4             y   a ia” I e
+NE          roam ow yh                                       lg ©
+Si A un Ro È   ey o a Un Fi  ea                           1    3        “e                                                 E  i   A Ye Mi
+Rl or AL   ox Ey  Pa                                                           A.    A a EE:
+ie      7 ©    i       a    e                                                                                                      E     23.7.  DN
+Ad      —— hey                                                                                       E> Eat dl  è
+LAO                     La                                                                                                   e   ¡E a 3 SRR ey
+AE DE    ia.                                                                                ARB itd Ts TRO 2
+i a     i    mE                                                                                         Ze     CAR
+A. i   SA                                                                                               al de    iy E
+E A  4 TA                                                                                                              3     A AP
+A  ano CA ©,                                                                                                             Bos
+RARE    Har AA UE E                                                                                                         a A CU
+5 E    a  EA NTE
+A» a EA
+EA 7 CS
+4 .A. ty
+e REO TED uu.  e e
+Fuh e A   PO      2208 VE
