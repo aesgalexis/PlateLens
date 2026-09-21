@@ -735,6 +735,19 @@ function addUnit(value, unit) {
   return compactValue.endsWith(compactUnit) ? value : value + " " + unit;
 }
 
+function ratingDetailScore(value) {
+  const source = String(value || "");
+  const numbers = source.match(/\d+(?:[.,]\d+)?/g) || [];
+  const separators = source.match(/[\/\-]|\.{2,3}/g) || [];
+  return numbers.length * 10 + separators.length * 2 + Math.min(5, source.length / 20);
+}
+
+function preferDetailedRating(existing, candidate) {
+  if (!candidate) return existing || "";
+  if (!existing) return candidate;
+  return ratingDetailScore(candidate) > ratingDetailScore(existing) ? candidate : existing;
+}
+
 function strictLabeledValue(lines, labelPattern, valuePatterns, lookAhead = 1, rejectLabelLinePattern = null) {
   const anotherTechnicalLabel = /\b(?:model|type|typ|serial|fabr\.?\s*nr|year|baujahr|voltage|spannung|frequency|frequenz|current|strom|power|leistung|capacity|f[üu]llmenge|volume|f[üu]llraum|speed|drehzahl|fuse|absicherung|schutzart|pressure|druck|temperature|temperatur|heating|beheizung|energy|energie)\b/i;
 
@@ -774,7 +787,7 @@ function recoverSplitLabelValues(result, lines) {
     1,
     /\b(?:control|aux(?:iliary)?|brake|capacitor|condenser)\b/i
   );
-  if (labelledVoltage) result.voltage = addUnit(labelledVoltage, "V");
+  if (labelledVoltage) result.voltage = preferDetailedRating(result.voltage, addUnit(labelledVoltage, "V"));
 
   const labelledPhases = strictLabeledValue(
     lines,
@@ -790,7 +803,7 @@ function recoverSplitLabelValues(result, lines) {
     [/\b((?:50|60)(?:\s*\/\s*(?:50|60))?)\s*Hz\b/i],
     1
   );
-  if (labelledFrequency) result.frequency = addUnit(labelledFrequency, "Hz");
+  if (labelledFrequency) result.frequency = preferDetailedRating(result.frequency, addUnit(labelledFrequency, "Hz"));
 
   const labelledCurrent = strictLabeledValue(
     lines,
@@ -799,7 +812,7 @@ function recoverSplitLabelValues(result, lines) {
     1,
     /(?:fuse|fusing|absicherung)/i
   );
-  if (labelledCurrent) result.current = addUnit(labelledCurrent, "A");
+  if (labelledCurrent) result.current = preferDetailedRating(result.current, addUnit(labelledCurrent, "A"));
 
   const labelledPower = strictLabeledValue(
     lines,
@@ -807,7 +820,7 @@ function recoverSplitLabelValues(result, lines) {
     [/\b(\d+(?:[.,]\d+)?)\s*kW\b/i],
     1
   );
-  if (labelledPower) result.power = addUnit(labelledPower, "kW");
+  if (labelledPower) result.power = preferDetailedRating(result.power, addUnit(labelledPower, "kW"));
 
   const labelledCapacity = strictLabeledValue(
     lines,
