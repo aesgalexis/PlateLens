@@ -1343,7 +1343,10 @@ function parseNameplate(text) {
   if (!result.weight && !result.capacity) {
     const motorWeightContext =
       /\b(?:IP\s*(?:X\d|\d{2})|ins\.?\s*cl|IE[1-5]|cos\s*(?:phi|[φϕ])|rpm|1\/min|min-?1|3\s*[~\-]\s*(?:mot|motor)?)\b/i.test(normalized);
-    if (motorWeightContext) {
+    const electricalEquipmentWeightContext =
+      /\binput\b[^\n]{0,60}\b(?:3AC|V|VAC|VDC)\b/i.test(normalized) &&
+      /\boutput\b[^\n]{0,60}\b(?:3AC|V|VAC|VDC)\b/i.test(normalized);
+    if (motorWeightContext || electricalEquipmentWeightContext) {
       const weightLine = lines.find(line =>
         /\b\d+(?:[.,]\d+)?[ \t]*kg\b/i.test(line) &&
         !/(?:capacity|load|charge|carga|f[üu]llmenge|refrigerant|circuit|füllraum|volume)/i.test(line)
