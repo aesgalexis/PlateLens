@@ -1328,6 +1328,12 @@ function parseNameplate(text) {
 
   recoverSplitLabelValues(result, lines);
 
+  for (const pressureKey of ["workingPressure","overpressure","airPressure","airSupplyPressure","steamPressure"]) {
+    if (result[pressureKey]) {
+      result[pressureKey] = result[pressureKey].replace(/\s*[-–]\s*/g, "-");
+    }
+  }
+
   if (result.fuseRating) {
     const fuseNumber = result.fuseRating.replace(/\s*A$/i, "");
     const labelledFuseValues = [];
