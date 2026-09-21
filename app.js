@@ -986,8 +986,8 @@ function recoverNoisyTechnicalRows(result, lines) {
 
   const noisyOverpressure = valueInLabelWindow(
     lines,
-    /(?:overpressure|(?:über|ueber|uber|tiber)druck)/i,
-    [/\b(\d+(?:[.,]\d+)?)\s*bar\b/i],
+    /(?:overpressure|(?:betriebs[\s-]*)?(?:über|ueber|uber|tiber)druck)/i,
+    [/(?:overpressure|(?:betriebs[\s-]*)?(?:über|ueber|uber|tiber)druck)[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*bar\b/i],
     1
   );
   if (noisyOverpressure) result.overpressure = addUnit(noisyOverpressure, "bar");
