@@ -724,6 +724,33 @@ const fixtures = [
     }
   },
   {
+    name: 'Generic split-label dense plate recovery',
+    text: 'Example Industries GmbH\nType\nZX-400\nSerial No.\nA123456\nRated voltage\n3 x 400 V\nFrequency\n50 Hz\nRated current\n32 A\nPower\n15,5 kW\nCapacity\n140 kg\nSpeed\n660 rpm\nFuse\n35 A\nDegree of protection\nIP54\nOperating temperature\n95 C\nWorking pressure\n4-8 bar',
+    expected: {
+      voltage: '400 V',
+      phases: '3',
+      frequency: '50 Hz',
+      current: '32 A',
+      power: '15,5 kW',
+      capacity: '140 kg',
+      speed: '660 rpm',
+      fuseRating: '35 A',
+      ipRating: 'IP54',
+      operatingTemperature: '95 °C',
+      workingPressure: '4-8 bar'
+    },
+    absent: ['weight']
+  },
+  {
+    name: 'Bare kg is not weight without a weight label',
+    text: 'Industrial machine\n140 kg\n400 V\n50 Hz',
+    expected: {
+      voltage: '400 V',
+      frequency: '50 Hz'
+    },
+    absent: ['weight']
+  },
+  {
     name: 'PHARMAGG false-positive rejection',
     text: 'PHARMAGG\nTEMTECHNIK-GMBH\nKannegiesser-Gruppe\nTyp o\nTEMTECHNIK-GMBH\nBaujahr 2000\nNennfrequenz 50 Hz\nAnschlußwert 15,5 kW\n5 A\ni=3\nFU1400\nFabr. Nr. 14200005027\nNennstrom 32 A\nNennspannung 3 x 400 V\nSchutzart IP54',
     expected: {
