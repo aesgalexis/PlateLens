@@ -1346,7 +1346,10 @@ function parseNameplate(text) {
     const electricalEquipmentWeightContext =
       /\binput\b[^\n]{0,60}\b(?:3AC|V|VAC|VDC)\b/i.test(normalized) &&
       /\boutput\b[^\n]{0,60}\b(?:3AC|V|VAC|VDC)\b/i.test(normalized);
-    if (motorWeightContext || electricalEquipmentWeightContext) {
+    const hydraulicWeightContext =
+      /(?:^|\n)\s*Q\s*[:=.-]?\s*\d/i.test(normalized) &&
+      /(?:^|\n)\s*H\s*[:=.-]?\s*\d/i.test(normalized);
+    if (motorWeightContext || electricalEquipmentWeightContext || hydraulicWeightContext) {
       const weightLine = lines.find(line =>
         /\b\d+(?:[.,]\d+)?[ \t]*kg\b/i.test(line) &&
         !/(?:capacity|load|charge|carga|f[üu]llmenge|refrigerant|circuit|füllraum|volume)/i.test(line)
