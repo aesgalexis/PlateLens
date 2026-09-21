@@ -765,6 +765,16 @@ const fixtures = [
     }
   },
   {
+    name: 'Pressure classes stay distinct',
+    text: 'Druckluft Betriebsdruck 6 -8 bar\nzulässiger Betriebsdruck 4-8 bar\nDruckluft Netzanschluß 10 bar\nzul. Betriebsüberdruck 10 bar',
+    expected: {
+      airPressure: '6-8 bar',
+      airSupplyPressure: '10 bar',
+      workingPressure: '4-8 bar',
+      overpressure: '10 bar'
+    }
+  },
+  {
     name: 'PHARMAGG false-positive rejection',
     text: 'PHARMAGG\nTEMTECHNIK-GMBH\nKannegiesser-Gruppe\nTyp o\nTEMTECHNIK-GMBH\nBaujahr 2000\nNennfrequenz 50 Hz\nAnschlußwert 15,5 kW\n5 A\ni=3\nFU1400\nFabr. Nr. 14200005027\nNennstrom 32 A\nNennspannung 3 x 400 V\nSchutzart IP54',
     expected: {
