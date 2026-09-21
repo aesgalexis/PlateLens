@@ -948,21 +948,27 @@ function recoverSplitLabelValues(result, lines) {
 }
 
 function recoverExplicitPatterns(result, normalized, lines) {
-  // Explicit labelled formats seen repeatedly across motors, drives, pumps,
-  // compressors and chillers. These rules are manufacturer-neutral.
+  // Prefer explicit machine-model labels, then strong product-code shapes,
+  // then generic Model/Type labels. This prevents descriptive machine types
+  // or nearby electrical text from being promoted to the model field.
+  const machineModel = first(normalized, [
+    /MACHINE\s+MODEL\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,5})(?=\s*(?:\n|$))/im
+  ]);
+
+  const highConfidenceModelLine = lines.find(line =>
+    /^(?:ACS\d|ATV\d|6SL\d|DRE\d|ETB\s+\d|GA\d{2,3}(?:VSD)?\b|[A-Z]{1,4}\d{2,}[A-Z0-9._\/-]*)/i.test(line) &&
+    !/\b(?:Hz|kW|bar|rpm|kg)\b/i.test(line) &&
+    !/\b\d+(?:[.,]\d+)?\s*(?:V|A)\b/i.test(line)
+  );
+
   const explicitModel = first(normalized, [
-    /(?:machine\s+model|model\s+number|model|type|typ)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,4})(?=\s*(?:\n|$))/im,
+    /(?:model\s+number|model|type|typ)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,4})(?=\s*(?:\n|$))/im,
     /\b1P\s+([A-Z0-9][A-Z0-9._\/-]{6,40})\b/i
   ]);
-  if (explicitModel) result.model = explicitModel;
 
-  if (!result.model) {
-    const codeLine = lines.find(line =>
-      /^(?:ACS\d|ATV\d|6SL\d|DRE\d|ETB\s+\d|GA\d{2,3}(?:VSD)?\b|[A-Z]{1,4}\d{2,}[A-Z0-9._\/-]*)/i.test(line) &&
-      !/\b(?:V|Hz|kW|A|bar|rpm|kg)\b/i.test(line)
-    );
-    if (codeLine) result.model = clean(codeLine);
-  }
+  if (machineModel) result.model = machineModel;
+  else if (highConfidenceModelLine) result.model = clean(highConfidenceModelLine);
+  else if (explicitModel) result.model = explicitModel;
 
   if (!result.model) {
     const compressorIndex = lines.findIndex(line => /^(?:compressor|screw\s+air\s+compressor)$/i.test(line));
@@ -980,6 +986,18 @@ function recoverExplicitPatterns(result, normalized, lines) {
   if (!result.serialNumber) {
     const apiSerial = lines.find(line => /^API\d{5,}$/i.test(line));
     if (apiSerial) result.serialNumber = clean(apiSerial);
+  }
+
+  const ratedVoltageHzPh = normalized.match(/RATED\s+VOLTAGE\s*\/\s*HZ\s*\/\s*PH\s*[:=.-]?\s*(\d{2,4})\s*\/\s*(50|60)\s*\/\s*([13])\b/i);
+  if (ratedVoltageHzPh) {
+    result.voltage = ratedVoltageHzPh[1] + " V";
+    result.frequency = ratedVoltageHzPh[2] + " Hz";
+    result.phases = ratedVoltageHzPh[3];
+  }
+
+  const explicitInputVoltageRange = normalized.match(/\bInput\s*:\s*3AC\s*(\d{3,4})\s*V?\s*[-–]\s*(\d{3,4})\s*V\b/i);
+  if (explicitInputVoltageRange) {
+    result.voltage = explicitInputVoltageRange[1] + "-" + explicitInputVoltageRange[2] + " V";
   }
 
   const trio = normalized.match(/(?:VOLTS?\s*\/\s*PHASE\s*\/\s*Hz|VOLTS?\/PHASE\/Hz)\s*[:=.-]?\s*(\d{2,4})\s*\/\s*([13])\s*\/\s*(50|60)\b/i);
@@ -1036,6 +1054,14 @@ function recoverExplicitPatterns(result, normalized, lines) {
   ]);
   if (pmaxBar) result.workingPressure = pmaxBar + " bar";
 
+  if (!result.workingPressure) {
+    const standalonePressure = lines.find(line => /^\d+(?:[.,]\d+)?\s*bar\b/i.test(line) && /\b(?:psi|MPa)\b/i.test(line));
+    if (standalonePressure) {
+      const pressureValue = first(standalonePressure, [/^(\d+(?:[.,]\d+)?)\s*bar\b/i]);
+      if (pressureValue) result.workingPressure = pressureValue + " bar";
+    }
+  }
+
   const pumpFlow = normalized.match(/\b(?:CAP|Q)\s*(?:m[³3]\/min|m[³3]\/h|l\/s|l\/min)\s*[:=.-]?\s*(\d+(?:[.,]\d+)?)/i);
   if (pumpFlow) {
     const unit = normalized.match(/\b(?:CAP|Q)\s*(m[³3]\/min|m[³3]\/h|l\/s|l\/min)/i);
@@ -1059,6 +1085,11 @@ function recoverExplicitPatterns(result, normalized, lines) {
   for (const key of ["frequency","voltage","current","power"]) {
     if (result[key]) result[key] = result[key].replace(/\s*\/\s*/g, "/");
   }
+  const allMarkedFrequencies = uniqueValues([...normalized.matchAll(/\b(50|60)\s*Hz\b/gi)].map(match => match[1]));
+  if (allMarkedFrequencies.length > 1) {
+    result.frequency = allMarkedFrequencies.join("/") + " Hz";
+  }
+
 }
 
 function uniqueValues(values) {
