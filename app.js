@@ -979,7 +979,7 @@ function recoverNoisyTechnicalRows(result, lines) {
   const noisyWorkingPressure = valueInLabelWindow(
     lines,
     /zul[aäá]ssiger/i,
-    [/(\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?)[^\n]{0,30}betriebsdruck[^\n]{0,20}bar\b/i],
+    [/zul[aäá]ssiger[^\d]{0,20}(\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?)[^\n]{0,30}betriebsdruck[^\n]{0,20}bar\b/i],
     1
   );
   if (noisyWorkingPressure) result.workingPressure = addUnit(noisyWorkingPressure.replace(/\s*[-–]\s*/g, "-"), "bar");
