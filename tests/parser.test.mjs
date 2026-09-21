@@ -775,6 +775,19 @@ const fixtures = [
     }
   },
   {
+    name: 'Noisy OCR label-window recovery',
+    text: 'Nennspannung | 3 X 400 |, zul.Trocken-\nNehnstro 32 |A.\nKinetische-\nEnergie 338850 INm\nDruckluft\nBetriebsdruck 6 -8 bar\nzulássiger 4-8\nBetriebsdruck bar\ntiberdruck | 10 bar',
+    expected: {
+      phases: '3',
+      voltage: '400 V',
+      current: '32 A',
+      kineticEnergy: '338850 Nm',
+      airPressure: '6-8 bar',
+      workingPressure: '4-8 bar',
+      overpressure: '10 bar'
+    }
+  },
+  {
     name: 'PHARMAGG false-positive rejection',
     text: 'PHARMAGG\nTEMTECHNIK-GMBH\nKannegiesser-Gruppe\nTyp o\nTEMTECHNIK-GMBH\nBaujahr 2000\nNennfrequenz 50 Hz\nAnschlußwert 15,5 kW\n5 A\ni=3\nFU1400\nFabr. Nr. 14200005027\nNennstrom 32 A\nNennspannung 3 x 400 V\nSchutzart IP54',
     expected: {
