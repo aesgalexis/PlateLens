@@ -690,154 +690,188 @@ function addUnit(value, unit) {
   return compactValue.endsWith(compactUnit) ? value : value + " " + unit;
 }
 
-function recoverSplitLabelValues(result, lines) {
-  if (!result.year) {
-    result.year = valueNearLabel(lines,
-      /\b(?:year|baujahr|anno|año|yr|built)\b/i,
-      [/\b((?:19|20)\d{2})\b/, /\b(\d{2})\b/],
-      2
-    );
-  }
+function strictLabeledValue(lines, labelPattern, valuePatterns, lookAhead = 1, rejectLabelLinePattern = null) {
+  for (let i = 0; i < lines.length; i++) {
+    const labelLine = lines[i];
+    labelPattern.lastIndex = 0;
+    if (!labelPattern.test(labelLine)) continue;
+    if (rejectLabelLinePattern) {
+      rejectLabelLinePattern.lastIndex = 0;
+      if (rejectLabelLinePattern.test(labelLine)) continue;
+    }
 
-  if (!result.voltage) {
-    const voltage = valueNearLabel(lines,
-      /\b(?:voltage|volt|spannung|tension|tensión|nennspannung|rated\s+voltage)\b/i,
-      [/\b(?:[13]\s*[x×~]\s*)?(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V\b/i, /\b(\d{3,4})\b/],
-      2
-    );
-    if (voltage) result.voltage = addUnit(voltage, "V");
-  }
-
-  if (!result.phases) {
-    result.phases = valueNearLabel(lines,
-      /\b(?:voltage|spannung|phase|phases|fasi|nennspannung)\b/i,
-      [/\b([13])\s*[x×~]\s*\d{2,4}\s*V?\b/i, /\b([13])\s*(?:ph|phase)\b/i],
-      2
-    );
-  }
-
-  if (!result.frequency) {
-    const frequency = valueNearLabel(lines,
-      /\b(?:frequency|frequenz|frecuencia|nennfrequenz|freq)\b/i,
-      [/\b((?:50|60)(?:\s*\/\s*(?:50|60))?)\s*Hz\b/i, /\b((?:50|60))\b/],
-      2
-    );
-    if (frequency) result.frequency = addUnit(frequency, "Hz");
-  }
-
-  if (!result.current) {
-    const current = valueNearLabel(lines,
-      /\b(?:current|corriente|nennstrom|strom|amp(?:s|ere)?|FLA)\b/i,
-      [/\b(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\s*A\b/i, /\b(\d+(?:[.,]\d+)?)\b/],
-      2
-    );
-    if (current) result.current = addUnit(current, "A");
-  }
-
-  if (!result.power) {
-    const power = valueNearLabel(lines,
-      /\b(?:power|leistung|anschlu(?:ss|ß)wert|potencia|input\s+power|rated\s+power)\b/i,
-      [/\b(\d+(?:[.,]\d+)?)\s*kW\b/i, /\b(\d+(?:[.,]\d+)?)\b/],
-      2
-    );
-    if (power) result.power = addUnit(power, "kW");
-  }
-
-  if (!result.capacity) {
-    const capacity = valueNearLabel(lines,
-      /(?:capacity|load|charge|carga|capacidad|capacit[aà]|trocken[\s-]*f[üu]llmenge|f[üu]llmenge|fullmenge|fill(?:ing)?\s*(?:amount|capacity))/i,
-      [/\b(\d+(?:[.,]\d+)?)\s*kg\b/i],
-      2
-    );
-    if (capacity) result.capacity = addUnit(capacity, "kg");
-  }
-
-  if (!result.volume) {
-    const volume = valueNearLabel(lines,
-      /(?:volume|f[üu]llraum|fullraum|liters?|litres?|litri)/i,
-      [/\b(\d+(?:[.,]\d+)?)\s*(?:L|Lt|ltr\.?|liters?|litres?)\b/i],
-      2
-    );
-    if (volume) result.volume = addUnit(volume, "L");
-  }
-
-  if (!result.speed) {
-    const speed = valueNearLabel(lines,
-      /(?:speed|drehzahl|schleuderdreh|velocidad|n\s*max|nmax)/i,
-      [/\b(\d{2,5})\s*(?:U\/min|1\/min|r\/?min|rpm|\/min)\b/i],
-      2
-    );
-    if (speed) result.speed = addUnit(speed, "rpm");
-  }
-
-  if (!result.fuseRating) {
-    const fuse = valueNearLabel(lines,
-      /(?:fuse|fusing|absicherung)/i,
-      [/\b(\d+(?:[.,]\d+)?)\s*A\b/i, /\b(\d+(?:[.,]\d+)?)\b/],
-      2
-    );
-    if (fuse) result.fuseRating = addUnit(fuse, "A");
-  }
-
-  if (!result.ipRating) {
-    result.ipRating = valueNearLabel(lines,
-      /(?:schutzart|degree\s+of\s+protection|protection\s+degree|IP)/i,
-      [/(\bIP\s*(?:X\d|\d{2})[A-Z]?\b)/i],
-      2
-    );
-  }
-
-  if (!result.electricalType) {
-    result.electricalType = valueNearLabel(lines,
-      /(?:stromart|current\s+type|supply\s+type)/i,
-      [/\b(AC\/DC|DC\/AC|AC|DC)\b/i],
-      2
-    );
-  }
-
-  if (!result.heatingType) {
-    result.heatingType = valueNearLabel(lines,
-      /(?:heating\s+type|beheizungsart|heizart)/i,
-      [/\b(Dampf|Steam|Gas|Elektro|Electric|Heisswasser|Heißwasser|Oil|Öl)\b/i],
-      2
-    );
-  }
-
-  if (!result.operatingTemperature) {
-    const temperature = valueNearLabel(lines,
-      /(?:operating\s+temperature|betriebs[\s-]*temperatur|temperature|temperatur)/i,
-      [/\b(\d+(?:[.,]\d+)?)\s*°?C\b/i],
-      2
-    );
-    if (temperature) result.operatingTemperature = addUnit(temperature, "°C");
-  }
-
-  if (!result.kineticEnergy) {
-    const energy = valueNearLabel(lines,
-      /(?:kinetische\s+energie|kinetic\s+energy)/i,
-      [/\b(\d+(?:[.,]\d+)?)\s*(?:Nm|N\s*m|J|kJ)\b/i],
-      2
-    );
-    if (energy) {
-      const joined = lines.join(" ");
-      const energyUnit = joined.match(/(?:kinetische\s+energie|kinetic\s+energy)[^\d]{0,40}\d+(?:[.,]\d+)?\s*(Nm|N\s*m|J|kJ)\b/i);
-      result.kineticEnergy = energy + (energyUnit && energyUnit[1] ? " " + energyUnit[1].replace(/\s+/g, "") : "");
+    const end = Math.min(lines.length, i + lookAhead + 1);
+    for (let j = i; j < end; j++) {
+      for (const pattern of valuePatterns) {
+        const value = first(lines[j], [pattern]);
+        if (value) return value;
+      }
     }
   }
+  return "";
+}
 
-  const pressureSpecs = [
-    ["airSupplyPressure", /(?:air\s+supply\s+pressure|druckluft[\s-]*netzanschlu(?:ss|ß))/i],
-    ["airPressure", /(?:air\s+(?:inlet|operating)\s+pressure|druckluft[\s-]*betriebsdruck)/i],
-    ["overpressure", /(?:overpressure|betriebs[\s-]*(?:über|ueber)druck)/i],
-    ["workingPressure", /(?:working\s+pressure|betriebsdruck|zul[aä]ssiger\s+betriebsdruck)/i]
-  ];
-  for (const [key, label] of pressureSpecs) {
-    if (result[key]) continue;
-    const pressure = valueNearLabel(lines, label,
-      [/\b(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i],
-      2
+function recoverSplitLabelValues(result, lines) {
+  // Prefer values that are explicitly tied to their semantic label. Generic
+  // unit matches elsewhere on a dense plate are useful as fallbacks, but must
+  // not outrank a labelled value from the same row or the following row.
+  const labelledVoltage = strictLabeledValue(
+    lines,
+    /\b(?:rated\s+voltage|nennspannung|voltage|spannung|tension|tensión|volt)\b/i,
+    [/\b(?:[13]\s*[x×~]\s*)?(\d{2,4}(?:\s*[\/-]\s*\d{2,4})?)\s*V(?:AC|DC)?\b/i],
+    1
+  );
+  if (labelledVoltage) result.voltage = addUnit(labelledVoltage, "V");
+
+  const labelledPhases = strictLabeledValue(
+    lines,
+    /\b(?:rated\s+voltage|nennspannung|voltage|spannung|phase|phases|fasi)\b/i,
+    [/\b([13])\s*[x×~]\s*\d{2,4}\s*V?\b/i, /\b([13])\s*(?:ph|phase)\b/i],
+    1
+  );
+  if (labelledPhases) result.phases = labelledPhases;
+
+  const labelledFrequency = strictLabeledValue(
+    lines,
+    /\b(?:rated\s+frequency|nennfrequenz|frequency|frequenz|frecuencia|freq)\b/i,
+    [/\b((?:50|60)(?:\s*\/\s*(?:50|60))?)\s*Hz\b/i],
+    1
+  );
+  if (labelledFrequency) result.frequency = addUnit(labelledFrequency, "Hz");
+
+  const labelledCurrent = strictLabeledValue(
+    lines,
+    /\b(?:rated\s+current|nennstrom|current|corriente|strom|amp(?:s|ere)?|FLA)\b/i,
+    [/\b(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\s*A\b/i],
+    1,
+    /(?:fuse|fusing|absicherung)/i
+  );
+  if (labelledCurrent) result.current = addUnit(labelledCurrent, "A");
+
+  const labelledPower = strictLabeledValue(
+    lines,
+    /\b(?:total\s+power|rated\s+power|input\s+power|power|leistung|anschlu(?:ss|ß)wert|potencia)\b/i,
+    [/\b(\d+(?:[.,]\d+)?)\s*kW\b/i],
+    1
+  );
+  if (labelledPower) result.power = addUnit(labelledPower, "kW");
+
+  const labelledCapacity = strictLabeledValue(
+    lines,
+    /(?:capacity|load|charge|carga|capacidad|capacit[aà]|trocken[\s-]*f[üu]llmenge|f[üu]llmenge|fullmenge|fill(?:ing)?\s*(?:amount|capacity))/i,
+    [/\b(\d+(?:[.,]\d+)?)\s*kg\b/i],
+    1
+  );
+  if (labelledCapacity) result.capacity = addUnit(labelledCapacity, "kg");
+
+  const labelledVolume = strictLabeledValue(
+    lines,
+    /(?:volume|f[üu]llraum|fullraum)/i,
+    [/\b(\d+(?:[.,]\d+)?)\s*(?:L|Lt|ltr\.?|liters?|litres?)\b/i],
+    1
+  );
+  if (labelledVolume) result.volume = addUnit(labelledVolume, "L");
+
+  const labelledSpeed = strictLabeledValue(
+    lines,
+    /(?:speed|drehzahl|schleuderdreh|velocidad|n\s*max|nmax)/i,
+    [/\b(\d{2,5})\s*(?:U\/min|1\/min|r\/?min|rpm|\/min)\b/i],
+    1
+  );
+  if (labelledSpeed) result.speed = addUnit(labelledSpeed, "rpm");
+
+  const labelledFuse = strictLabeledValue(
+    lines,
+    /(?:fuse|fusing|absicherung)/i,
+    [/\b(\d+(?:[.,]\d+)?)\s*A\b/i],
+    1
+  );
+  if (labelledFuse) result.fuseRating = addUnit(labelledFuse, "A");
+
+  const labelledIp = strictLabeledValue(
+    lines,
+    /(?:schutzart|degree\s+of\s+protection|protection\s+degree|IP)/i,
+    [/(\bIP\s*(?:X\d|\d{2})[A-Z]?\b)/i],
+    1
+  );
+  if (labelledIp) result.ipRating = labelledIp;
+
+  const labelledElectricalType = strictLabeledValue(
+    lines,
+    /(?:stromart|current\s+type|supply\s+type)/i,
+    [/\b(AC\/DC|DC\/AC|AC|DC)\b/i],
+    1
+  );
+  if (labelledElectricalType) result.electricalType = labelledElectricalType;
+
+  const labelledHeatingType = strictLabeledValue(
+    lines,
+    /(?:heating\s+type|beheizungsart|heizart)/i,
+    [/\b(Dampf|Steam|Gas|Elektro|Electric|Heisswasser|Heißwasser|Oil|Öl)\b/i],
+    1
+  );
+  if (labelledHeatingType) result.heatingType = labelledHeatingType;
+
+  const labelledTemperature = strictLabeledValue(
+    lines,
+    /(?:operating\s+temperature|betriebs[\s-]*temperatur|temperature|temperatur)/i,
+    [/\b(\d+(?:[.,]\d+)?)\s*°?C\b/i],
+    1
+  );
+  if (labelledTemperature) result.operatingTemperature = addUnit(labelledTemperature, "°C");
+
+  const labelledEnergy = strictLabeledValue(
+    lines,
+    /(?:kinetische\s+energie|kinetic\s+energy)/i,
+    [/\b(\d+(?:[.,]\d+)?)\s*(?:Nm|N\s*m|J|kJ)\b/i],
+    1
+  );
+  if (labelledEnergy) {
+    const energyLine = lines.find(line => /(?:kinetische\s+energie|kinetic\s+energy)/i.test(line)) || "";
+    const energyUnit = energyLine.match(/\b(Nm|N\s*m|J|kJ)\b/i);
+    result.kineticEnergy = labelledEnergy + (energyUnit && energyUnit[1] ? " " + energyUnit[1].replace(/\s+/g, "") : "");
+  }
+
+  const airSupply = strictLabeledValue(
+    lines,
+    /(?:air\s+supply\s+pressure|druckluft[\s-]*netzanschlu(?:ss|ß))/i,
+    [/\b(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i],
+    1
+  );
+  if (airSupply) result.airSupplyPressure = addUnit(airSupply, "bar");
+
+  const airOperating = strictLabeledValue(
+    lines,
+    /(?:air\s+(?:inlet|operating)\s+pressure|druckluft[\s-]*betriebsdruck)/i,
+    [/\b(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i],
+    1
+  );
+  if (airOperating) result.airPressure = addUnit(airOperating, "bar");
+
+  const overpressure = strictLabeledValue(
+    lines,
+    /(?:overpressure|betriebs[\s-]*(?:über|ueber)druck)/i,
+    [/\b(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i],
+    1
+  );
+  if (overpressure) result.overpressure = addUnit(overpressure, "bar");
+
+  const workingPressure = strictLabeledValue(
+    lines,
+    /(?:working\s+pressure|zul[aä]ssiger\s+betriebsdruck|betriebsdruck)/i,
+    [/\b(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*bar\b/i],
+    1,
+    /(?:druckluft|air|überdruck|ueberdruck|overpressure)/i
+  );
+  if (workingPressure) result.workingPressure = addUnit(workingPressure, "bar");
+
+  if (!result.year) {
+    result.year = valueNearLabel(
+      lines,
+      /\b(?:year|baujahr|anno|año|yr|built)\b/i,
+      [/\b((?:19|20)\d{2})\b/],
+      1
     );
-    if (pressure) result[key] = addUnit(pressure, "bar");
   }
 }
 function uniqueValues(values) {
@@ -1239,6 +1273,23 @@ function parseNameplate(text) {
   ]);
 
   recoverSplitLabelValues(result, lines);
+
+  if (result.fuseRating) {
+    const fuseNumber = result.fuseRating.replace(/\s*A$/i, "");
+    const labelledFuseValues = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (!/(?:fuse|fusing|absicherung)/i.test(lines[i])) continue;
+      for (const line of lines.slice(i, Math.min(lines.length, i + 2))) {
+        for (const match of line.matchAll(/\b(\d+(?:[.,]\d+)?)\s*A\b/gi)) {
+          labelledFuseValues.push(match[1]);
+        }
+      }
+    }
+    const fullerFuse = labelledFuseValues
+      .filter(value => value.length > fuseNumber.length && value.endsWith(fuseNumber))
+      .sort((a, b) => b.length - a.length)[0];
+    if (fullerFuse) result.fuseRating = fullerFuse + " A";
+  }
 
   // Company lines are a stronger manufacturer signal than arbitrary first text.
   const knownBrands = [
