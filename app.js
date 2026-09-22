@@ -2394,10 +2394,17 @@ function fuseOcrPassCandidates(mergedText, passTexts = []) {
 
     const candidateMoreDetailed =
       ratingDetailScore(best.value) >= ratingDetailScore(existing) + 8;
+    const identityField = ["manufacturer","brand","model","serialNumber","partNumber","orderNumber"].includes(field);
     const repeatedStrongCandidate =
-      best.support >= 2 && best.score >= existingScore + 12;
+      !identityField &&
+      best.support >= 2 &&
+      best.bestEvidence >= 30 &&
+      best.score >= existingScore + 4;
     const consensusCandidate =
-      best.support >= 3 && candidateMoreDetailed && best.score >= existingScore;
+      !identityField &&
+      best.support >= 3 &&
+      candidateMoreDetailed &&
+      best.score >= existingScore;
 
     if (repeatedStrongCandidate || consensusCandidate) fused[field] = best.value;
   }
