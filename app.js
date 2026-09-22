@@ -526,9 +526,10 @@ analyzeBtn.addEventListener("click", async () => {
       });
 
       let result = await worker.recognize(orientedImage);
+      const ocrPassTexts = [orientation.text, result.data.text].filter(Boolean);
       // The low-resolution SPARSE_TEXT orientation probe often recovers labels
       // that AUTO misses on reflective or grid-lined metal plates. Keep it.
-      let text = mergeOcrTexts(orientation.text, result.data.text);
+      let text = mergeOcrTexts(...ocrPassTexts);
 
       if (needsSparseRetry(text)) {
         ocrPass = 2;
@@ -538,6 +539,7 @@ analyzeBtn.addEventListener("click", async () => {
           preserve_interword_spaces: "1"
         });
         const frameResult = await worker.recognize(orientedImage, {rectangle: plateFrame});
+        ocrPassTexts.push(frameResult.data.text);
         text = mergeOcrTexts(text, frameResult.data.text);
       }
 
@@ -549,6 +551,7 @@ analyzeBtn.addEventListener("click", async () => {
           preserve_interword_spaces: "1"
         });
         const bodyResult = await worker.recognize(orientedImage, {rectangle: plateBody});
+        ocrPassTexts.push(bodyResult.data.text);
         text = mergeOcrTexts(text, bodyResult.data.text);
       }
 
@@ -583,14 +586,18 @@ analyzeBtn.addEventListener("click", async () => {
           preserve_interword_spaces: "1"
         });
         const leftColumnBlockResult = await worker.recognize(orientedImage, {rectangle:leftColumn});
+        ocrPassTexts.push(leftColumnBlockResult.data.text);
         const rightColumnBlockResult = await worker.recognize(orientedImage, {rectangle:rightColumn});
+        ocrPassTexts.push(rightColumnBlockResult.data.text);
 
         await worker.setParameters({
           tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
           preserve_interword_spaces: "1"
         });
         const leftColumnSparseResult = await worker.recognize(orientedImage, {rectangle:leftColumn});
+        ocrPassTexts.push(leftColumnSparseResult.data.text);
         const rightColumnSparseResult = await worker.recognize(orientedImage, {rectangle:rightColumn});
+        ocrPassTexts.push(rightColumnSparseResult.data.text);
 
         text = mergeOcrTexts(
           leftColumnBlockResult.data.text,
@@ -631,6 +638,7 @@ analyzeBtn.addEventListener("click", async () => {
             tileTexts.push(tileResult.data.text);
           }
         }
+        ocrPassTexts.push(...tileTexts);
         text = mergeOcrTexts(...tileTexts, text);
       }
 
@@ -676,6 +684,7 @@ analyzeBtn.addEventListener("click", async () => {
           bandTexts.push(binaryResult.data.text);
         }
 
+        ocrPassTexts.push(...bandTexts);
         text = mergeOcrTexts(...bandTexts, text);
       }
 
@@ -723,6 +732,7 @@ analyzeBtn.addEventListener("click", async () => {
           if (/[A-Za-zÀ-ÿ0-9]{2}/.test(lineText)) rowTexts.push(lineText);
         }
 
+        ocrPassTexts.push(...rowTexts);
         text = mergeOcrTexts(...rowTexts, text);
       }
 
@@ -734,6 +744,7 @@ analyzeBtn.addEventListener("click", async () => {
           preserve_interword_spaces: "1"
         });
         const bodySparseResult = await worker.recognize(orientedImage, {rectangle: plateBody});
+        ocrPassTexts.push(bodySparseResult.data.text);
         text = mergeOcrTexts(text, bodySparseResult.data.text);
       }
 
@@ -742,6 +753,7 @@ analyzeBtn.addEventListener("click", async () => {
         progressText.textContent = "Reading grayscale plate body…";
         const grayBody = makeGrayVariant(cropCanvas(orientedImage, plateBody));
         const grayBodyResult = await worker.recognize(grayBody);
+        ocrPassTexts.push(grayBodyResult.data.text);
         text = mergeOcrTexts(text, grayBodyResult.data.text);
       }
 
@@ -753,6 +765,7 @@ analyzeBtn.addEventListener("click", async () => {
           preserve_interword_spaces: "1"
         });
         const sparseResult = await worker.recognize(orientedImage);
+        ocrPassTexts.push(sparseResult.data.text);
         text = mergeOcrTexts(text, sparseResult.data.text);
       }
 
@@ -766,6 +779,7 @@ analyzeBtn.addEventListener("click", async () => {
         const bodyImage = cropCanvas(orientedImage, plateBody);
         const binaryImage = makeBinaryVariant(bodyImage);
         const binaryResult = await worker.recognize(binaryImage);
+        ocrPassTexts.push(binaryResult.data.text);
         text = mergeOcrTexts(text, binaryResult.data.text);
       }
 
@@ -783,6 +797,7 @@ analyzeBtn.addEventListener("click", async () => {
           height: Math.round(orientedImage.height * 0.68)
         };
         const regionResult = await worker.recognize(orientedImage, {rectangle: technicalRegion});
+        ocrPassTexts.push(regionResult.data.text);
         text = mergeOcrTexts(text, regionResult.data.text);
       }
 
@@ -794,11 +809,12 @@ analyzeBtn.addEventListener("click", async () => {
           preserve_interword_spaces: "1"
         });
         const layoutResult = await worker.recognize(orientedImage);
+        ocrPassTexts.push(layoutResult.data.text);
         text = mergeOcrTexts(text, layoutResult.data.text);
       }
 
       rawText.textContent = text || "No readable text detected.";
-      const parsed = parseNameplate(text);
+      const parsed = fuseOcrPassCandidates(text, ocrPassTexts);
       fillForm(parsed, detectFieldPresence(text));
       resultsSection.hidden = false;
       resultsSection.scrollIntoView({behavior:"smooth",block:"start"});
@@ -2203,6 +2219,188 @@ function parseNameplate(text) {
   }
 
   return result;
+}
+
+function normalizeCandidateValue(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[–—]/g, "-")
+    .replace(/\s+/g, "")
+    .replace(/,/g, ".");
+}
+
+function candidateShapeScore(field, value) {
+  const source = String(value || "").trim();
+  if (!source) return -100;
+
+  const unitPatterns = {
+    voltage:/\bV$/i,
+    frequency:/\bHz$/i,
+    power:/\bkW$/i,
+    apparentPower:/\bkVA$/i,
+    current:/\bA$/i,
+    speed:/\brpm$/i,
+    capacity:/\bkg$/i,
+    volume:/\bL$/i,
+    workingPressure:/\b(?:bar|psi|psig|mbar)$/i,
+    overpressure:/\b(?:bar|psi|psig|mbar)$/i,
+    airPressure:/\bbar$/i,
+    airSupplyPressure:/\bbar$/i,
+    steamPressure:/\bbar$/i,
+    operatingTemperature:/°C$/i,
+    fuseRating:/\bA$/i,
+    kineticEnergy:/\b(?:Nm|J|kJ)$/i,
+    weight:/\bkg$/i
+  };
+
+  let score = Math.min(10, Math.max(0, ratingDetailScore(source) / 3));
+  if (unitPatterns[field]?.test(source)) score += 12;
+  if (field === "year" && /^(?:19|20)\d{2}$/.test(source)) score += 12;
+  if (field === "phases" && /^[13]$/.test(source)) score += 12;
+  if (["manufacturer","brand","model","serialNumber","partNumber","orderNumber"].includes(field)) {
+    if (/[A-Za-z]/.test(source)) score += 5;
+    if (/\d/.test(source)) score += 4;
+    if (source.length >= 3 && source.length <= 45) score += 4;
+  }
+  return score;
+}
+
+const candidateLabelPatterns = {
+  manufacturer:/manufacturer|fabricante|hersteller|costruttore/i,
+  brand:/brand|marca|marke|gruppe|group/i,
+  model:/model|type|typ|tipo|mod\.?/i,
+  serialNumber:/serial|s\/n|s\.nr|fabr\.?\s*nr|matricola/i,
+  partNumber:/part|p\/n|product\s*(?:no|number)|code|cod\.?/i,
+  year:/year|baujahr|anno|año/i,
+  phases:/phase|phasen|ph\b|3\s*~|1\s*~/i,
+  voltage:/voltage|spannung|volt|nennspannung|\bU\s*\(?V/i,
+  frequency:/frequency|frequenz|frecuencia|freq|\bHz\b/i,
+  power:/power|leistung|potencia|anschlu(?:ss|ß)wert|\bkW\b/i,
+  apparentPower:/apparent|\bkVA\b/i,
+  current:/current|strom|corriente|amp|nennstrom|\bA\b/i,
+  electricalType:/stromart|current\s+type|supply\s+type/i,
+  capacity:/capacity|load|füllmenge|fullmenge|trocken/i,
+  volume:/volume|füllraum|fullraum|lit/i,
+  refrigerant:/refrigerant|refrig|kältemittel/i,
+  ratio:/ratio|übersetzung|uebersetzung|\bi\s*=/i,
+  flow:/flow|caudal|durchfluss|\bQ\b/i,
+  head:/head|altura|förderhöhe|\bH\b/i,
+  workingPressure:/working\s+pressure|betriebsdruck|pressure|p\s*max/i,
+  overpressure:/overpressure|überdruck|ueberdruck/i,
+  heatingType:/heating|beheizungsart|heizart/i,
+  airPressure:/air.*pressure|druckluft.*betriebsdruck/i,
+  airSupplyPressure:/air.*supply|druckluft.*netzanschlu/i,
+  steamPressure:/steam.*pressure|dampf.*druck/i,
+  operatingTemperature:/temperature|temperatur|betriebstemperatur/i,
+  fuseRating:/fuse|fusing|absicherung/i,
+  speed:/speed|drehzahl|rpm|r\/min|min-?1|nmax/i,
+  ipRating:/schutzart|degree\s+of\s+protection|\bIP\s*\d/i,
+  kineticEnergy:/kinetic|kinetische/i,
+  weight:/weight|gewicht|mass|peso|\bkg\b/i
+};
+
+function candidateEvidenceScore(text, field, value) {
+  const source = String(text || "");
+  if (!source || !value) return -100;
+
+  let score = candidateShapeScore(field, value);
+  const compactSource = normalizeCandidateValue(source);
+  const compactValue = normalizeCandidateValue(value);
+  if (compactValue && compactSource.includes(compactValue)) score += 7;
+
+  const labelPattern = candidateLabelPatterns[field];
+  if (labelPattern?.test(source)) {
+    score += 7;
+    const valueParts = String(value).match(/\d+(?:[.,]\d+)?|[A-Za-z]{2,}/g) || [];
+    const lines = source.split(/\r?\n/);
+    const strongLine = lines.some(line => {
+      labelPattern.lastIndex = 0;
+      if (!labelPattern.test(line)) return false;
+      return valueParts.some(part => line.toLowerCase().includes(part.toLowerCase()));
+    });
+    if (strongLine) score += 14;
+  }
+
+  score += Math.max(0, Math.min(10, ocrTextQuality(source) / 30));
+  return score;
+}
+
+function fuseOcrPassCandidates(mergedText, passTexts = []) {
+  const baseline = parseNameplate(mergedText);
+  const uniquePasses = [];
+  const seen = new Set();
+
+  for (const raw of passTexts) {
+    const text = String(raw || "").trim();
+    if (!text) continue;
+    const key = text.toLowerCase().replace(/\s+/g, " ");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    uniquePasses.push(text);
+  }
+
+  const passResults = uniquePasses.map(text => ({
+    text,
+    parsed:parseNameplate(text)
+  }));
+  const fieldsToFuse = new Set([
+    ...Object.keys(baseline),
+    ...passResults.flatMap(entry => Object.keys(entry.parsed))
+  ]);
+  const fused = {...baseline};
+
+  for (const field of fieldsToFuse) {
+    const groups = new Map();
+
+    for (const entry of passResults) {
+      const value = entry.parsed[field];
+      if (!value) continue;
+      const key = normalizeCandidateValue(value);
+      if (!key) continue;
+      if (!groups.has(key)) groups.set(key, {value, support:0, bestEvidence:-Infinity});
+      const group = groups.get(key);
+      group.support += 1;
+      group.bestEvidence = Math.max(
+        group.bestEvidence,
+        candidateEvidenceScore(entry.text, field, value)
+      );
+      if (ratingDetailScore(value) > ratingDetailScore(group.value)) group.value = value;
+    }
+
+    if (!groups.size) continue;
+    const ranked = [...groups.values()]
+      .map(group => ({
+        ...group,
+        score:group.support * 18 + group.bestEvidence
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    const best = ranked[0];
+    const existing = baseline[field] || "";
+    if (!existing) {
+      if (best.support >= 2 || best.bestEvidence >= 34) fused[field] = best.value;
+      continue;
+    }
+
+    const existingKey = normalizeCandidateValue(existing);
+    const existingGroup = groups.get(existingKey);
+    const existingScore = existingGroup
+      ? existingGroup.support * 18 + existingGroup.bestEvidence + 18
+      : candidateEvidenceScore(mergedText, field, existing) + 24;
+
+    if (normalizeCandidateValue(best.value) === existingKey) continue;
+
+    const candidateMoreDetailed =
+      ratingDetailScore(best.value) >= ratingDetailScore(existing) + 8;
+    const repeatedStrongCandidate =
+      best.support >= 2 && best.score >= existingScore + 12;
+    const consensusCandidate =
+      best.support >= 3 && candidateMoreDetailed && best.score >= existingScore;
+
+    if (repeatedStrongCandidate || consensusCandidate) fused[field] = best.value;
+  }
+
+  return fused;
 }
 
 function fillForm(data, presence = new Set()) {
