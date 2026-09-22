@@ -12,7 +12,8 @@ PlateLens is a small browser-based tool for technicians, maintainers and anyone 
 - OCR runs in the browser with Tesseract.js using English, German, Italian and Spanish language data.
 - Images are locally rescaled and contrast-enhanced before OCR; weak reflective-plate reads can also trigger an adaptive black/white OCR pass.
 - Auto-orientation checks 0°, 90°, 180° and 270° before the main read; weak results also probe small ±6°/±12° deskew offsets.
-- Incomplete reads can trigger a second pass over the inner plate frame, the central technical region, a high-contrast variant and alternate page-segmentation modes.
+- Incomplete reads can trigger additional passes over the plate frame, columns, technical regions, overlapping rows, high-contrast variants and alternate page-segmentation modes.
+- Each OCR pass is also parsed independently. PlateLens fuses field candidates conservatively: repeated labelled technical values can rescue or correct a merged read, while identity fields such as model and serial remain deliberately harder to override.
 - The image is not uploaded by PlateLens.
 - Common fields are detected automatically: manufacturer, equipment, model, serial/part/order number, date/year, phases, voltage, frequency, real/apparent power, current, speed, IP rating, weight, capacity, refrigerant/medium, ratio, flow/head and pressure.
 - Detected data is presented as an editable form; fields that are not present stay hidden, while labels detected with unreadable values remain visible as empty review fields. All empty fields can still be revealed manually.
@@ -39,12 +40,12 @@ The site is intentionally static and can be published directly from the reposito
 
 ## Regression corpus
 
-The parser is checked against 204 automated regression cases: 50 public hand-curated nameplate formats, four noisy OCR samples from real plates, a 100-case stress suite generated from 20 real industrial plate families, and a separate corpus transcribed from 50 distinct real nameplate photographs found online. Coverage includes pumps, compressors, VFDs, industrial motors, industrial laundry equipment, gearboxes and several multi-rating electrical table layouts.
+The parser and OCR-fusion layer are checked against more than 240 regression cases and scenarios: public hand-curated nameplate formats, noisy OCR samples from real plates, a 100-case stress suite, a 50-plate online corpus, two additional visual benchmarks covering 41 real plates, real raw-OCR captures, and dedicated candidate-fusion conflicts. Coverage includes pumps, compressors, VFDs, industrial motors, industrial laundry equipment, HVAC/refrigeration, gearboxes and several multi-rating electrical table layouts.
 
 Run the regression set with:
 
 ```bash
-node tests/parser.test.mjs && node tests/mega-corpus.test.mjs && node tests/online-50.test.mjs && node tests/visual-benchmark.test.mjs && node tests/visual-benchmark-2.test.mjs && node tests/raw-ocr.test.mjs && node tests/ocr-corpus.test.mjs && node tests/presence.test.mjs && node tests/orientation.test.mjs
+node tests/parser.test.mjs && node tests/mega-corpus.test.mjs && node tests/online-50.test.mjs && node tests/visual-benchmark.test.mjs && node tests/visual-benchmark-2.test.mjs && node tests/raw-ocr.test.mjs && node tests/ocr-corpus.test.mjs && node tests/candidate-fusion.test.mjs && node tests/presence.test.mjs && node tests/orientation.test.mjs
 ```
 
 See `docs/test-corpus.md` for the hand-curated corpus, `docs/online-50-corpus.md` for the 50 distinct real online plates, `docs/mega-corpus.md` for the 100-case stress suite, `docs/visual-benchmark-2.md` for the second 20-plate visual corpus, `docs/ocr-benchmark.md` for real raw-OCR regression cases, and `docs/orientation-corpus.md` for the orientation/pose reference set.
