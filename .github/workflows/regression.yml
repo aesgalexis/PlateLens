@@ -1,0 +1,37 @@
+name: Regression suite
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run PlateLens regression suite
+        run: |
+          node tests/parser.test.mjs
+          node tests/mega-corpus.test.mjs
+          node tests/online-50.test.mjs
+          node tests/visual-benchmark.test.mjs
+          node tests/visual-benchmark-2.test.mjs
+          node tests/raw-ocr.test.mjs
+          node tests/ocr-corpus.test.mjs
+          node tests/candidate-fusion.test.mjs
+          node tests/presence.test.mjs
+          node tests/orientation.test.mjs
+          node tests/runtime-wiring.test.mjs
