@@ -2321,7 +2321,9 @@ function candidateEvidenceScore(text, field, value) {
     if (strongLine) score += 14;
   }
 
-  score += Math.max(0, Math.min(10, ocrTextQuality(source) / 30));
+  const technicalSignals = (source.match(/\b(?:Hz|kW|kVA|V|Volt|A|rpm|r\/min|min-?1|bar|mbar|psi|psig|kg|°C|Nm)\b/gi) || []).length;
+  const readableLines = source.split(/\r?\n/).filter(line => /[A-Za-zÀ-ÿ0-9]{3}/.test(line)).length;
+  score += Math.min(10, technicalSignals * 1.5 + Math.min(4, readableLines / 3));
   return score;
 }
 
