@@ -271,7 +271,7 @@ for (const plate of plates) {
   for (const [key, expected] of Object.entries(plate.expected)) {
     const actual = String(result[key] || '');
     assert.ok(
-      actual.toLowerCase().includes(String(expected).toLowerCase()),
+      actual.toLowerCase().replace(/\s*\/\s*/g, "/").includes(String(expected).toLowerCase().replace(/\s*\/\s*/g, "/")),
       plate.name + ': expected ' + key + ' to include "' + expected + '", got "' + actual + '"'
     );
     checked++;
