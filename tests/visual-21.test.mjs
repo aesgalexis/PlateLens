@@ -85,7 +85,7 @@ const plates = [
     name: 'KSB ETB cropped motor table',
     category: 'pump-motor',
     text: 'KSB Aktiengesellschaft\n1PC30381EB234DA5\n180M IMV5 IP55\nA kW cos NOM.EFF 1/min\n35.0 18.5 0.84 91.2 1465\n20.0 18.5 0.84 91.2 1465\n34.0 21.3 0.85 92.4 1765\n30.5 18.5 0.83 92.4 1770',
-    expected: {manufacturer:'KSB', ipRating:'IP55', power:'18.5 kW', speed:'1465 rpm'}
+    expected: {manufacturer:'KSB', ipRating:'IP55', power:'18.5 / 21.3 kW', speed:'1465 / 1765 / 1770 rpm'}
   },
   {
     name: 'Wilo NL150/250 pump',
@@ -157,7 +157,7 @@ for (const plate of plates) {
   for (const [key, expected] of Object.entries(plate.expected)) {
     const actual = String(result[key] || '');
     assert.ok(
-      actual.toLowerCase().includes(String(expected).toLowerCase()),
+      actual.toLowerCase().replace(/\s*\/\s*/g, "/").includes(String(expected).toLowerCase().replace(/\s*\/\s*/g, "/")),
       plate.name + ': expected ' + key + ' to include "' + expected + '", got "' + actual + '"'
     );
     assertions++;
