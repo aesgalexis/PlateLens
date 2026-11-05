@@ -1201,9 +1201,10 @@ function recoverExplicitPatterns(result, normalized, lines) {
   ]);
 
   const strongCode = first(normalized, [
-    /\b(ACS\d{3,4}-[A-Z0-9._\/-]+)\b/i,
+    /\b(ACS\d{3,4}-[A-Z0-9.+_\/-]+)\b/i,
     /\b(ATV\d{3}[A-Z0-9._\/-]+)\b/i,
     /\b(6SL\d[A-Z0-9._\/-]+)\b/i,
+    /\b((?:RF|R|K|F|S)\d{1,3}\s+DRE\d[A-Z0-9._\/-]+)\b/i,
     /\b(DRE\d[A-Z0-9._\/-]+)\b/i,
     /(?:^|\n)\s*(ETB\s+\d[A-Z0-9 ._\/-]+)\s*(?:\n|$)/im,
     /(?:^|\n)\s*(GA\d{2,3}(?:VSD)?)\s*(?:\n|$)/im
@@ -2258,6 +2259,12 @@ function parseNameplate(text) {
       .replace(/\s*\.{2,3}\s*/g, "-")
       .replace(/\s*\/\s*/g, "/");
   }
+
+  // Total machine power takes precedence over individual motor/heater ratings.
+  const totalMachinePower = first(normalized, [
+    /\bTOTAL[ \t]+POWER[ \t]*[:=.-]?[ \t]*(\d+(?:[.,]\d+)?)[ \t]*kW\b/i
+  ]);
+  if (totalMachinePower) result.power = totalMachinePower + " kW";
 
   return result;
 }
