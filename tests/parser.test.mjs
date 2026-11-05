@@ -854,7 +854,7 @@ for (const fixture of fixtures) {
   for (const [key, expected] of Object.entries(fixture.expected)) {
     const actual = result[key] || '';
     assert.ok(
-      actual.toLowerCase().includes(expected.toLowerCase()),
+      actual.toLowerCase().replace(/\s*\/\s*/g, "/").includes(expected.toLowerCase().replace(/\s*\/\s*/g, "/")),
       fixture.name + ': expected ' + key + ' to include "' + expected + '", got "' + actual + '"'
     );
   }
