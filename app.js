@@ -1217,8 +1217,12 @@ function recoverExplicitPatterns(result, normalized, lines) {
     return /^[A-Z][A-Z0-9._\/-]*(?:\s+[A-Z0-9][A-Z0-9._\/-]*){0,4}$/i.test(line);
   });
 
+  // A generic phrase such as "Drive Motor" is not a model number.
+  // Only a leading Model/Type label may replace an existing model candidate.
   const explicitModel = first(normalized, [
-    /(?:model\s*(?:no\.?|number)?|type|typ)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9.+_\/-]*(?:\s+[A-Z0-9.+_\/-]+){0,4})(?=\s*(?:\n|$))/im,
+    /(?:^|\n)[ \t]*(?:model\s*(?:no\.?|number)?|type|typ)[ \t]*[:#.-]?[ \t]*([A-Z0-9][A-Z0-9.+_\/-]*(?:[ \t]+[A-Z0-9.+_\/-]+){0,4})(?=[ \t]*(?:\n|$))/im
+  ]);
+  const inferredModel = first(normalized, [
     /\b(?:pump|compressor|drive|gearbox)\s+([A-Z0-9][A-Z0-9._\/-]{3,40})\b/i,
     /\b1P\s+([A-Z0-9][A-Z0-9._\/-]{6,40})\b/i
   ]);
@@ -1226,6 +1230,7 @@ function recoverExplicitPatterns(result, normalized, lines) {
   if (machineModel) result.model = machineModel;
   else if (strongCode) result.model = strongCode;
   else if (explicitModel && !/^(?:e|open)$/i.test(explicitModel)) result.model = explicitModel;
+  else if (!result.model && inferredModel && !/^(?:motor|type|model)$/i.test(inferredModel)) result.model = inferredModel;
   else if (!result.model && highConfidenceModelLine) result.model = clean(highConfidenceModelLine);
 
   if (!result.model) {
@@ -1319,7 +1324,7 @@ function recoverExplicitPatterns(result, normalized, lines) {
 
   if (!result.weight) {
     const massLine = lines.find(line => /^\d+(?:[.,]\d+)?\s*kg$/i.test(line));
-    if (massLine && /\b(?:compressor|motor|machine)\b/i.test(normalized)) result.weight = clean(massLine);
+    if (massLine && /\b(?:compressor|motor)\b/i.test(normalized)) result.weight = clean(massLine);
   }
 
   const pmaxBar = first(normalized, [
@@ -1661,6 +1666,7 @@ function parseNameplate(text) {
   ]);
 
   result.current = first(normalized, [
+    /\bI1\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)+)\s*A\b/i,
     /\bI\s*\(\s*A\s*\)\s*(?:input)?\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*[\/-]\s*\d+(?:[.,]\d+)?)*)\b/i,
     /(?:^|\n)\s*A(?:\s+|[:=~-]\s*)(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?)*)\b/im,
     /\bAmps\s+LD\/ND\/HD\s*[:=.-]?\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+(?:[.,]\d+)?){1,3})\b/i,
@@ -1827,6 +1833,7 @@ function parseNameplate(text) {
     /\b(R(?:22|32|134a|290|404A|407C|410A|448A|449A|452A|454[AC]|507|513A|600a))\b/i
   ]);
   result.ratio = first(normalized, [
+    /\bRATIO\s*[:=.-]?\s*(\d+(?:[.,]\d+)?\s*:\s*\d+)\b/i,
     /\bi\s*(?:[:=]|\s)\s*(\d+(?:[.,]\d+)?)/i,
     /\b(\d+(?:[.,]\d+)?)\s*:\s*1\b/i,
     /\b(\d+\s*:\s*\d+)\b/
@@ -1905,6 +1912,18 @@ function parseNameplate(text) {
   recoverSplitLabelValues(result, lines);
   recoverNoisyTechnicalRows(result, lines);
   recoverExplicitPatterns(result, normalized, lines);
+
+  // After all OCR recovery passes, normalize a common 1 / I / L ambiguity
+  // only for long all-digit model numbers.
+  if (/^[LI]\d{7,}$/i.test(result.model || "")) result.model = "1" + result.model.slice(1);
+  const explicitSerialNumber = first(normalized, [
+    /\b(?:matricola[ \t]*\/[ \t]*serial[ \t]+number|serial[ \t]+number)[ \t]*[:=.-]?[ \t]*(\d{4,})\b/i
+  ]);
+  if (explicitSerialNumber) result.serialNumber = explicitSerialNumber;
+  const inputCurrentI1 = first(normalized, [
+    /\bI1[ \t]*[:=.-]?[ \t]*(\d+(?:[.,]\d+)?(?:[ \t]*\/[ \t]*\d+(?:[.,]\d+)?)+)[ \t]*A\b/i
+  ]);
+  if (inputCurrentI1) result.current = inputCurrentI1 + " A";
 
   for (const pressureKey of ["workingPressure","overpressure","airPressure","airSupplyPressure","steamPressure"]) {
     if (result[pressureKey]) {
@@ -2030,6 +2049,11 @@ function parseNameplate(text) {
     result.manufacturer = "PHARMAGG";
     if (/\bKannegiesser\b/i.test(normalized)) result.brand = "Kannegiesser";
   }
+  const longTypeCode = first(normalized, [
+    /\bT[\/]C[ \t]*:[ \t]*([A-Z0-9]{15,})\b/i
+  ]);
+  if (longTypeCode && /\b(?:Danfoss|VLT)\b/i.test(normalized)) result.model = longTypeCode;
+
   if (result.manufacturer === "Leroy-Somer" && !result.serialNumber) {
     result.serialNumber = first(normalized, [/(?:19|20)\d{2}\s+([A-Z]?\d{5,10})\b/i]);
   }
@@ -2064,6 +2088,8 @@ function parseNameplate(text) {
   }
 
   if (result.manufacturer === "Trane") {
+    const compressorPhases = first(normalized, [/\bCOMPRESSOR\b[^\n]*?\bPH\s*[:=.-]?\s*([13])\b/i]);
+    if (compressorPhases) result.phases = compressorPhases;
     if (!result.model) result.model = first(normalized, [/MODELO\s*\n\s*([A-Z0-9][A-Z0-9._\/-]{8,60})/i, /MODEL\s*\n\s*([A-Z0-9][A-Z0-9._\/-]{8,60})/i]);
     result.serialNumber = first(normalized, [/SERIAL\s*N[°º]?\s*([A-Z0-9]+(?:\s+\d+)?)(?=\s+(?:ANNEE|YEAR|BAUJAHR)|\n|$)/i]) || result.serialNumber;
   }
@@ -2071,6 +2097,8 @@ function parseNameplate(text) {
     result.serialNumber = first(normalized, [/Typ\s+[A-Z0-9._\/-]+\s*\n\s*([A-Z0-9]+\/[A-Z0-9]+)/i]);
   }
   if (result.manufacturer === "Riello") {
+    const rielloFamily = first(normalized, [/(?:^|\n)[ \t]*RIELLO[ \t]+(\d+[ \t]+G\d+(?:[ \t]+[A-Z]{1,3})?)(?=[ \t]*(?:\n|$))/im]);
+    if (rielloFamily) result.model = rielloFamily;
     if (!result.model) result.model = first(normalized, [/RIELLO\s+([0-9]+\s*G\d+\s*[A-Z]*)\b/i]);
     if (!result.serialNumber) result.serialNumber = first(normalized, [/(?:^|\n)\s*N\.\s*(\d{6,})\b/i]);
     if (!result.partNumber) result.partNumber = first(normalized, [/\bCOD\.\s*(\d{5,})\b/i]);
@@ -2078,6 +2106,10 @@ function parseNameplate(text) {
   if (result.manufacturer === "Falk" && !result.capacity) {
     const gals = first(normalized, [/(?:APPROX\.\s*)?U\.S\.\s*GALS\.\s*(\d+(?:[.,]\d+)?)/i]);
     if (gals) result.capacity = gals + " US gal";
+  }
+  if (result.manufacturer === "WEG") {
+    const wegCode = first(normalized, [/(?:^|\n)[ \t]*(W3[A-Z0-9._\/-]{7,})(?=[ \t]*(?:\n|$))/im,/(?:^|\n)[ \t]*(\d{3}[A-Z]\/?[A-Z]?-\d{2})(?=[ \t]*(?:\n|$))/im]);
+    if (wegCode) result.model = wegCode;
   }
   if (result.manufacturer === "WEG" && !result.model) {
     result.model = first(normalized, [
@@ -2113,8 +2145,16 @@ function parseNameplate(text) {
     ]);
     if (siemensMotorModel) result.model = siemensMotorModel;
   }
+  if (result.manufacturer === "Siemens") {
+    const moduleModel = first(normalized, [/\bPOWER\s+MODULE\s+(PM\d{3}-\d)\b/i]);
+    if (moduleModel) result.model = moduleModel;
+  }
   if (result.manufacturer === "Siemens" && !result.model) {
     result.model = first(normalized, [/(?:POWER\s+MODULE\s+)?(PM\d{3}-\d)\b/i, /(?:^|\n)\s*(6SL\d[A-Z0-9._\/-]+)\s*(?:\n|$)/i]);
+  }
+  if (result.manufacturer === "Allen-Bradley") {
+    const powerFlexModel = first(normalized, [/\b(PowerFlex[ \t]+\d{3}(?:TM)?)\b/i]);
+    if (powerFlexModel) result.model = powerFlexModel;
   }
   if (result.manufacturer === "Allen-Bradley" && !result.model) {
     result.model = first(normalized, [/(PowerFlex\s+\d{3}(?:TM)?)/i]);
@@ -2128,6 +2168,7 @@ function parseNameplate(text) {
   }
 
   if (isPharmaggFamily) {
+    if (!/\b(?:Nennstrom|rated\s+current|current|strom|amper)\b/i.test(normalized) && /(?:^|\n)[ \t]*\d+(?:[.,]\d+)?[ \t]*A[ \t]*(?:\n|$)/im.test(normalized)) result.current = "";
     const pharmaModel = first(normalized, [
       /\b(FU\s*\d{3,5})\b/i,
       /(?:^|\n)\s*Typ\s*[:=.-]?\s*(FU\s*\d{3,5})\b/im,
